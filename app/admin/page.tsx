@@ -375,6 +375,14 @@ export default function AdminPage() {
               </button>
             )}
 
+            <a
+              href="/commitments"
+              className="logout-button"
+              style={{ textDecoration: 'none', background: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8', borderColor: 'rgba(56, 189, 248, 0.4)' }}
+            >
+              📜 לוח התחייבויות
+            </a>
+
             <button onClick={handleLogout} className="logout-button">
               התנתק
             </button>
