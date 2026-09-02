@@ -140,31 +140,6 @@ export default function RapperPage() {
             </button>
           </div>
         </div>
-
-        {/* Navigation Quick Links */}
-        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '2.5rem' }}>
-          <a
-            href="/stream"
-            className="save-order-button"
-            style={{ textDecoration: 'none', background: '#3b82f6', padding: '8px 16px', borderRadius: '8px', fontSize: '0.95rem' }}
-          >
-            📺 מסך הקרנה
-          </a>
-          <a
-            href="/commitments"
-            className="save-order-button"
-            style={{ textDecoration: 'none', background: '#8b5cf6', padding: '8px 16px', borderRadius: '8px', fontSize: '0.95rem' }}
-          >
-            📜 לוח התחייבויות
-          </a>
-          <a
-            href="/"
-            className="logout-button"
-            style={{ textDecoration: 'none', padding: '8px 16px', borderRadius: '8px', fontSize: '0.95rem' }}
-          >
-            📱 עמוד משתמש
-          </a>
-        </div>
       </div>
 
       {/* Main Slogans Presentation */}
