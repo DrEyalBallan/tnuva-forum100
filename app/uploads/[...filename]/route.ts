@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
+import { getGalleryItems, getUploadsDir } from '@/lib/storage';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,30 +27,51 @@ export async function GET(
   try {
     const fileParts = params.filename || [];
     const requestedPath = fileParts.join('/');
-    // Prevent directory traversal
-    const safePath = path.normalize(requestedPath).replace(/^(\.\.[\/\\])+/, '');
-    const fullPath = path.join(process.cwd(), 'public', 'uploads', safePath);
+    const safeFilename = path.basename(requestedPath);
 
-    if (!fs.existsSync(fullPath)) {
-      return NextResponse.json({ error: 'File not found' }, { status: 404 });
+    // 1. Search in configured uploads directory (e.g. /tmp/tnuva-uploads or public/uploads)
+    const candidates = [
+      path.join(getUploadsDir(), safeFilename),
+      path.join(process.cwd(), 'public', 'uploads', safeFilename),
+      path.join(os.tmpdir(), 'tnuva-uploads', safeFilename),
+      path.join(os.tmpdir(), safeFilename),
+    ];
+
+    for (const candidate of candidates) {
+      try {
+        if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+          const ext = path.extname(candidate).toLowerCase();
+          const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+          const fileBuffer = fs.readFileSync(candidate);
+
+          return new NextResponse(fileBuffer, {
+            headers: {
+              'Content-Type': contentType,
+              'Cache-Control': 'public, max-age=31536000, immutable',
+            },
+          });
+        }
+      } catch {}
     }
 
-    const stat = fs.statSync(fullPath);
-    if (!stat.isFile()) {
-      return NextResponse.json({ error: 'Not a file' }, { status: 400 });
+    // 2. Check memory store for dataUrl fallback
+    const items = await getGalleryItems();
+    const target = items.find((i) => i.filename === safeFilename || i.url.endsWith(safeFilename));
+    if (target && target.dataUrl && target.dataUrl.startsWith('data:')) {
+      const match = target.dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+      if (match) {
+        const contentType = match[1];
+        const buffer = Buffer.from(match[2], 'base64');
+        return new NextResponse(buffer, {
+          headers: {
+            'Content-Type': contentType,
+            'Cache-Control': 'public, max-age=31536000, immutable',
+          },
+        });
+      }
     }
 
-    const ext = path.extname(fullPath).toLowerCase();
-    const contentType = MIME_TYPES[ext] || 'application/octet-stream';
-    const fileBuffer = fs.readFileSync(fullPath);
-
-    return new NextResponse(fileBuffer, {
-      headers: {
-        'Content-Type': contentType,
-        'Content-Length': stat.size.toString(),
-        'Cache-Control': 'public, max-age=31536000, immutable',
-      },
-    });
+    return NextResponse.json({ error: 'File not found' }, { status: 404 });
   } catch (error: any) {
     console.error('Error serving upload file:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
