@@ -10,3 +10,9 @@ services:
         value: 20.18.0
       - key: ADMIN_PASSWORD
         value: tnuva2025
+      - key: CLOUDINARY_CLOUD_NAME
+        value: dp4uagtq9
+      - key: CLOUDINARY_API_KEY
+        value: 652565257832732
+      - key: CLOUDINARY_API_SECRET
+        value: SUr7VNDvITDZ796Yx6XW5Itgk-E
