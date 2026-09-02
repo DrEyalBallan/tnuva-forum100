@@ -88,16 +88,33 @@ export default function StreamPage() {
             />
           </div>
 
-          {/* Link to Commitments Board */}
-          <div style={{ margin: '0.5rem auto 2.5rem', display: 'flex', justifyContent: 'center' }}>
+          {/* Links to Rapper & Commitments Boards */}
+          <div style={{ margin: '0.5rem auto 2.5rem', display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <a
+              href="/rapper"
+              className="save-order-button"
+              style={{
+                textDecoration: 'none',
+                background: 'linear-gradient(135deg, #0284c7, #2563eb)',
+                padding: '12px 24px',
+                fontSize: '1.05rem',
+                borderRadius: '12px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 4px 15px rgba(37, 99, 235, 0.4)'
+              }}
+            >
+              🎤 עמוד סלוגנים לראפר
+            </a>
             <a
               href="/commitments"
               className="save-order-button"
               style={{
                 textDecoration: 'none',
                 background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
-                padding: '12px 28px',
-                fontSize: '1.1rem',
+                padding: '12px 24px',
+                fontSize: '1.05rem',
                 borderRadius: '12px',
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -105,7 +122,7 @@ export default function StreamPage() {
                 boxShadow: '0 4px 15px rgba(139, 92, 246, 0.4)'
               }}
             >
-              📜 מעבר ללוח התחייבויות לפעולה
+              📜 לוח התחייבויות לפעולה
             </a>
           </div>
 
@@ -187,21 +204,10 @@ export default function StreamPage() {
             ) : (
               <img
                 src={activeItem?.url}
-                alt={activeItem?.sentence || 'הקרנת תמונה'}
+                alt="הקרנת תמונה"
                 className="vj-image"
                 loading="eager"
               />
-            )}
-
-            {/* Text Overlay for Slogan */}
-            {activeItem?.sentence && (
-              <div className="text-overlay-container" style={{ animationDuration: `${slideDuration}ms` }}>
-                <div className="text-overlay" style={{ animationDuration: `${slideDuration}ms` }}>
-                  <div className="caption-main">
-                    {activeItem.sentence}
-                  </div>
-                </div>
-              </div>
             )}
           </div>
         </div>
