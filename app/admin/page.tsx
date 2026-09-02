@@ -376,9 +376,17 @@ export default function AdminPage() {
             )}
 
             <a
+              href="/rapper"
+              className="logout-button"
+              style={{ textDecoration: 'none', background: 'rgba(2, 132, 199, 0.25)', color: '#38bdf8', borderColor: 'rgba(56, 189, 248, 0.4)' }}
+            >
+              🎤 עמוד ראפר
+            </a>
+
+            <a
               href="/commitments"
               className="logout-button"
-              style={{ textDecoration: 'none', background: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8', borderColor: 'rgba(56, 189, 248, 0.4)' }}
+              style={{ textDecoration: 'none', background: 'rgba(139, 92, 246, 0.25)', color: '#c084fc', borderColor: 'rgba(192, 132, 252, 0.4)' }}
             >
               📜 לוח התחייבויות
             </a>
