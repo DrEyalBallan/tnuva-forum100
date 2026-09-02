@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import fs from 'fs';
 import { addGalleryItem, GalleryItem, getUploadsDir } from '@/lib/storage';
+import { uploadBufferToCloudinary } from '@/lib/cloudinary';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,50 +23,66 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Sanitize filename
-    const originalName = file.name ? file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_') : 'image.jpg';
-    const ext = path.extname(originalName) || '.jpg';
-    const uniqueId = Math.random().toString(36).slice(2, 10);
-    const timestamp = Date.now();
-    const filename = `G${group}_${timestamp}_${uniqueId}${ext}`;
+    let galleryItem: GalleryItem;
 
-    const uploadsDir = getUploadsDir();
-    const filePath = path.join(uploadsDir, filename);
-    
+    // 1. Try uploading to Cloudinary (Indestructible cloud storage)
     try {
-      fs.writeFileSync(filePath, buffer);
-    } catch (fsErr) {
-      console.warn('Could not write file to uploadsDir, storing in memory fallback:', fsErr);
-    }
+      const isVideo = file.type?.startsWith('video/') || file.name?.match(/\.(mp4|webm|ogg|mov)$/i);
+      galleryItem = await uploadBufferToCloudinary(buffer, {
+        group,
+        sentence,
+        commitment,
+        token: clientToken,
+        resourceType: isVideo ? 'video' : 'image',
+      });
+    } catch (cldErr) {
+      console.warn('Cloudinary upload failed, falling back to local/tmp storage:', cldErr);
 
-    const mimeType = file.type || 'image/jpeg';
-    const dataUrl = `data:${mimeType};base64,${buffer.toString('base64')}`;
-    const fileUrl = `/uploads/${filename}`;
+      // Local/tmp fallback
+      const originalName = file.name ? file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_') : 'image.jpg';
+      const ext = path.extname(originalName) || '.jpg';
+      const uniqueId = Math.random().toString(36).slice(2, 10);
+      const timestamp = Date.now();
+      const filename = `G${group}_${timestamp}_${uniqueId}${ext}`;
 
-    const galleryItem: GalleryItem = {
-      id: `${timestamp}-${uniqueId}`,
-      url: fileUrl,
-      group,
-      sentence,
-      commitment,
-      time: timestamp,
-      token: clientToken,
-      filename,
-      dataUrl,
-    };
+      const uploadsDir = getUploadsDir();
+      const filePath = path.join(uploadsDir, filename);
 
-    await addGalleryItem(galleryItem);
+      try {
+        fs.writeFileSync(filePath, buffer);
+      } catch (fsErr) {
+        console.warn('Local fs write failed:', fsErr);
+      }
 
-    return NextResponse.json({
-      url: fileUrl,
-      token: clientToken,
-      item: {
-        id: galleryItem.id,
+      const mimeType = file.type || 'image/jpeg';
+      const dataUrl = `data:${mimeType};base64,${buffer.toString('base64')}`;
+      const fileUrl = `/uploads/${filename}`;
+
+      galleryItem = {
+        id: `${timestamp}-${uniqueId}`,
         url: fileUrl,
         group,
         sentence,
         commitment,
         time: timestamp,
+        token: clientToken,
+        filename,
+        dataUrl,
+      };
+    }
+
+    await addGalleryItem(galleryItem);
+
+    return NextResponse.json({
+      url: galleryItem.url,
+      token: clientToken,
+      item: {
+        id: galleryItem.id,
+        url: galleryItem.url,
+        group: galleryItem.group,
+        sentence: galleryItem.sentence,
+        commitment: galleryItem.commitment,
+        time: galleryItem.time,
       },
     });
   } catch (error: any) {
