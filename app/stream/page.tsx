@@ -88,6 +88,27 @@ export default function StreamPage() {
             />
           </div>
 
+          {/* Link to Commitments Board */}
+          <div style={{ margin: '0.5rem auto 2.5rem', display: 'flex', justifyContent: 'center' }}>
+            <a
+              href="/commitments"
+              className="save-order-button"
+              style={{
+                textDecoration: 'none',
+                background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                padding: '12px 28px',
+                fontSize: '1.1rem',
+                borderRadius: '12px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 4px 15px rgba(139, 92, 246, 0.4)'
+              }}
+            >
+              📜 מעבר ללוח התחייבויות לפעולה
+            </a>
+          </div>
+
           {/* 3D Stream Grid */}
           <div className="stream-grid">
             {/* Global All-Groups Card */}
@@ -172,20 +193,13 @@ export default function StreamPage() {
               />
             )}
 
-            {/* Text Overlay for Sentence and Commitment to Action */}
-            {(activeItem?.sentence || activeItem?.commitment) && (
+            {/* Text Overlay for Slogan */}
+            {activeItem?.sentence && (
               <div className="text-overlay-container" style={{ animationDuration: `${slideDuration}ms` }}>
                 <div className="text-overlay" style={{ animationDuration: `${slideDuration}ms` }}>
-                  {activeItem.sentence && (
-                    <div className="caption-main">
-                      {activeItem.sentence}
-                    </div>
-                  )}
-                  {activeItem.commitment && (
-                    <div className="commitment-box">
-                      ✨ התחייבות לפעולה: {activeItem.commitment}
-                    </div>
-                  )}
+                  <div className="caption-main">
+                    {activeItem.sentence}
+                  </div>
                 </div>
               </div>
             )}
