@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { fetchAllCloudinaryGalleryItems, deleteFromCloudinary } from './cloudinary';
 
 export interface GalleryItem {
   id: string;
@@ -11,11 +12,12 @@ export interface GalleryItem {
   time: number;
   token?: string;
   filename?: string;
-  dataUrl?: string; // In-memory/serverless fallback
+  dataUrl?: string;
 }
 
 let memoryStore: GalleryItem[] = [];
 let isMemoryStoreInitialized = false;
+let lastCloudinaryFetch = 0;
 
 export function getUploadsDir(): string {
   const localDir = path.join(process.cwd(), 'public', 'uploads');
@@ -57,20 +59,38 @@ export function getDataFilePath(): string {
 }
 
 export async function getGalleryItems(): Promise<GalleryItem[]> {
+  const now = Date.now();
+  // Fetch from Cloudinary every 3 seconds or on first init
+  if (!isMemoryStoreInitialized || now - lastCloudinaryFetch > 3000) {
+    try {
+      const cloudItems = await fetchAllCloudinaryGalleryItems();
+      if (cloudItems && cloudItems.length > 0) {
+        memoryStore = cloudItems;
+        isMemoryStoreInitialized = true;
+        lastCloudinaryFetch = now;
+        return memoryStore;
+      }
+    } catch (err) {
+      console.warn('Cloudinary sync failed, using fallback:', err);
+    }
+  }
+
   const dataFile = getDataFilePath();
   try {
     if (fs.existsSync(dataFile)) {
       const raw = fs.readFileSync(dataFile, 'utf-8');
       const items: GalleryItem[] = JSON.parse(raw);
-      memoryStore = items;
+      if (memoryStore.length === 0) {
+        memoryStore = items;
+      }
       isMemoryStoreInitialized = true;
-      return items;
+      return memoryStore;
     }
   } catch (err) {
     console.warn('Filesystem read warning (using memory store fallback):', err);
   }
+
   if (!isMemoryStoreInitialized) {
-    // Initial dummy / fallback seed if needed
     memoryStore = [];
     isMemoryStoreInitialized = true;
   }
@@ -100,11 +120,14 @@ export async function deleteGalleryItemsByUrls(urls: string[]): Promise<string[]
   const remaining: GalleryItem[] = [];
   const urlSet = new Set(urls);
   const uploadsDir = getUploadsDir();
+  const cloudinaryIdsToDelete: string[] = [];
 
   for (const item of items) {
     if (urlSet.has(item.url)) {
       deletedUrls.push(item.url);
-      if (item.filename) {
+      if (item.filename && item.filename.startsWith('tnuva-forum100/')) {
+        cloudinaryIdsToDelete.push(item.filename);
+      } else if (item.filename) {
         const filePath = path.join(uploadsDir, item.filename);
         try {
           if (fs.existsSync(filePath)) {
@@ -117,6 +140,10 @@ export async function deleteGalleryItemsByUrls(urls: string[]): Promise<string[]
     } else {
       remaining.push(item);
     }
+  }
+
+  if (cloudinaryIdsToDelete.length > 0) {
+    await deleteFromCloudinary(cloudinaryIdsToDelete);
   }
 
   await saveGalleryItems(remaining);
