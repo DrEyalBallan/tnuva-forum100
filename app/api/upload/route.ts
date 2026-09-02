@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import fs from 'fs';
-import { addGalleryItem, GalleryItem } from '@/lib/storage';
+import { addGalleryItem, GalleryItem, getUploadsDir } from '@/lib/storage';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,15 +29,19 @@ export async function POST(request: NextRequest) {
     const timestamp = Date.now();
     const filename = `G${group}_${timestamp}_${uniqueId}${ext}`;
 
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
+    const uploadsDir = getUploadsDir();
+    const filePath = path.join(uploadsDir, filename);
+    
+    try {
+      fs.writeFileSync(filePath, buffer);
+    } catch (fsErr) {
+      console.warn('Could not write file to uploadsDir, storing in memory fallback:', fsErr);
     }
 
-    const filePath = path.join(uploadsDir, filename);
-    fs.writeFileSync(filePath, buffer);
-
+    const mimeType = file.type || 'image/jpeg';
+    const dataUrl = `data:${mimeType};base64,${buffer.toString('base64')}`;
     const fileUrl = `/uploads/${filename}`;
+
     const galleryItem: GalleryItem = {
       id: `${timestamp}-${uniqueId}`,
       url: fileUrl,
@@ -47,6 +51,7 @@ export async function POST(request: NextRequest) {
       time: timestamp,
       token: clientToken,
       filename,
+      dataUrl,
     };
 
     await addGalleryItem(galleryItem);
