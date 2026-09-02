@@ -44,20 +44,41 @@ export default function RapperPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Map latest slogan per group (1-20)
-  const groupSlogans: Record<number, { sentence: string; time: number }> = {};
+  // Collect ALL slogans per group (1-20), allowing multiple slogans per group without overwriting
+  const groupSlogans: Record<number, Array<{ id: string; sentence: string; time: number }>> = {};
+  for (let i = 1; i <= 20; i++) {
+    groupSlogans[i] = [];
+  }
+
   items.forEach((item) => {
     if (item.group >= 1 && item.group <= 20 && item.sentence && item.sentence.trim()) {
-      if (!groupSlogans[item.group] || item.time > groupSlogans[item.group].time) {
-        groupSlogans[item.group] = {
+      // Avoid exact duplicates by id/sentence
+      const exists = groupSlogans[item.group].some(
+        (s) => s.id === item.id || (s.sentence === item.sentence.trim() && Math.abs(s.time - item.time) < 1000)
+      );
+      if (!exists) {
+        groupSlogans[item.group].push({
+          id: item.id || item.url,
           sentence: item.sentence.trim(),
           time: item.time,
-        };
+        });
       }
     }
   });
 
-  const submittedCount = Object.keys(groupSlogans).length;
+  // Sort each group's slogans by time (newest first)
+  for (let i = 1; i <= 20; i++) {
+    groupSlogans[i].sort((a, b) => b.time - a.time);
+  }
+
+  const groupsWithSlogansCount = Object.keys(groupSlogans).filter(
+    (grp) => groupSlogans[parseInt(grp, 10)].length > 0
+  ).length;
+
+  const totalSlogansCount = Object.values(groupSlogans).reduce(
+    (acc, arr) => acc + arr.length,
+    0
+  );
 
   return (
     <main
@@ -81,7 +102,7 @@ export default function RapperPage() {
           🎤 סלוגנים לראפר
         </h1>
         <p className="subtitle" style={{ fontSize: '1.15rem', color: '#38bdf8', fontWeight: 600, marginBottom: '1rem' }}>
-          פורום 100 – מודל מנהיגות | מאגר 20 הסלוגנים בלבד
+          פורום 100 – מודל מנהיגות | מאגר הסלוגנים של כל הקבוצות
         </p>
 
         {/* Counter & View Mode Switcher */}
@@ -106,7 +127,7 @@ export default function RapperPage() {
               fontWeight: 700,
             }}
           >
-            🔥 התקבלו: {submittedCount} מתוך 20 קבוצות
+            🔥 {totalSlogansCount} סלוגנים ({groupsWithSlogansCount} מתוך 20 קבוצות)
           </div>
 
           <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(255,255,255,0.08)', padding: '4px', borderRadius: '10px' }}>
@@ -143,7 +164,7 @@ export default function RapperPage() {
       </div>
 
       {/* Main Slogans Presentation */}
-      {isLoading && submittedCount === 0 ? (
+      {isLoading && totalSlogansCount === 0 ? (
         <div className="text-center" style={{ padding: '4rem' }}>
           <div className="loader" style={{ width: '40px', height: '40px', margin: '0 auto 1rem auto' }} />
           <p style={{ color: '#94a3b8' }}>טוען סלוגנים בלייב...</p>
@@ -152,18 +173,18 @@ export default function RapperPage() {
         /* STAGE TELEPROMPTER VIEW */
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {Array.from({ length: 20 }, (_, i) => i + 1).map((grp) => {
-            const entry = groupSlogans[grp];
-            const hasSlogan = !!entry;
+            const slogansList = groupSlogans[grp] || [];
+            const hasSlogans = slogansList.length > 0;
             return (
               <div
                 key={grp}
                 className="glass-panel"
                 style={{
                   padding: '1.75rem 2rem',
-                  borderRight: hasSlogan ? '6px solid #38bdf8' : '6px solid rgba(255,255,255,0.1)',
-                  background: hasSlogan ? 'rgba(15, 23, 42, 0.85)' : 'rgba(15, 23, 42, 0.4)',
+                  borderRight: hasSlogans ? '6px solid #38bdf8' : '6px solid rgba(255,255,255,0.1)',
+                  background: hasSlogans ? 'rgba(15, 23, 42, 0.85)' : 'rgba(15, 23, 42, 0.4)',
                   display: 'flex',
-                  alignItems: 'center',
+                  alignItems: 'flex-start',
                   gap: '2rem',
                 }}
               >
@@ -171,25 +192,48 @@ export default function RapperPage() {
                   style={{
                     minWidth: '130px',
                     textAlign: 'center',
-                    background: hasSlogan ? 'linear-gradient(135deg, #0284c7, #2563eb)' : 'rgba(255,255,255,0.05)',
-                    color: hasSlogan ? '#fff' : '#64748b',
+                    background: hasSlogans ? 'linear-gradient(135deg, #0284c7, #2563eb)' : 'rgba(255,255,255,0.05)',
+                    color: hasSlogans ? '#fff' : '#64748b',
                     padding: '12px 18px',
                     borderRadius: '12px',
                     fontWeight: 800,
                     fontSize: '1.4rem',
-                    boxShadow: hasSlogan ? '0 4px 15px rgba(37, 99, 235, 0.4)' : 'none',
+                    boxShadow: hasSlogans ? '0 4px 15px rgba(37, 99, 235, 0.4)' : 'none',
+                    flexShrink: 0,
                   }}
                 >
                   קבוצה {grp}
+                  {slogansList.length > 1 && (
+                    <div style={{ fontSize: '0.8rem', fontWeight: 600, opacity: 0.9, marginTop: '4px' }}>
+                      ({slogansList.length} סלוגנים)
+                    </div>
+                  )}
                 </div>
 
-                <div style={{ flex: 1 }}>
-                  {hasSlogan ? (
-                    <div style={{ fontSize: '1.85rem', fontWeight: 700, color: '#ffffff', lineHeight: 1.35 }}>
-                      "{entry.sentence}"
-                    </div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {hasSlogans ? (
+                    slogansList.map((slog, idx) => (
+                      <div
+                        key={slog.id || idx}
+                        style={{
+                          background: slogansList.length > 1 ? 'rgba(255, 255, 255, 0.04)' : 'transparent',
+                          padding: slogansList.length > 1 ? '0.75rem 1rem' : '0',
+                          borderRadius: '8px',
+                          borderRight: slogansList.length > 1 ? '3px solid #38bdf8' : 'none',
+                        }}
+                      >
+                        {slogansList.length > 1 && (
+                          <span style={{ fontSize: '0.85rem', color: '#38bdf8', fontWeight: 700, marginLeft: '8px' }}>
+                            #{idx + 1}:
+                          </span>
+                        )}
+                        <span style={{ fontSize: '1.85rem', fontWeight: 700, color: '#ffffff', lineHeight: 1.35 }}>
+                          "{slog.sentence}"
+                        </span>
+                      </div>
+                    ))
                   ) : (
-                    <div style={{ fontSize: '1.2rem', color: '#64748b', fontStyle: 'italic' }}>
+                    <div style={{ fontSize: '1.2rem', color: '#64748b', fontStyle: 'italic', paddingTop: '8px' }}>
                       ממתין לסלוגן מקבוצה {grp}...
                     </div>
                   )}
@@ -203,13 +247,13 @@ export default function RapperPage() {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
             gap: '1.25rem',
           }}
         >
           {Array.from({ length: 20 }, (_, i) => i + 1).map((grp) => {
-            const entry = groupSlogans[grp];
-            const hasSlogan = !!entry;
+            const slogansList = groupSlogans[grp] || [];
+            const hasSlogans = slogansList.length > 0;
             return (
               <div
                 key={grp}
@@ -219,16 +263,16 @@ export default function RapperPage() {
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
-                  borderTop: hasSlogan ? '4px solid #38bdf8' : '4px solid rgba(255,255,255,0.1)',
-                  background: hasSlogan ? 'rgba(30, 41, 59, 0.7)' : 'rgba(15, 23, 42, 0.35)',
+                  borderTop: hasSlogans ? '4px solid #38bdf8' : '4px solid rgba(255,255,255,0.1)',
+                  background: hasSlogans ? 'rgba(30, 41, 59, 0.7)' : 'rgba(15, 23, 42, 0.35)',
                   minHeight: '170px',
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                   <span
                     style={{
-                      background: hasSlogan ? 'linear-gradient(135deg, #0284c7, #2563eb)' : 'rgba(255,255,255,0.06)',
-                      color: hasSlogan ? '#fff' : '#64748b',
+                      background: hasSlogans ? 'linear-gradient(135deg, #0284c7, #2563eb)' : 'rgba(255,255,255,0.06)',
+                      color: hasSlogans ? '#fff' : '#64748b',
                       padding: '5px 12px',
                       borderRadius: '8px',
                       fontWeight: 700,
@@ -237,18 +281,35 @@ export default function RapperPage() {
                   >
                     קבוצה {grp}
                   </span>
-                  {hasSlogan && (
+                  {hasSlogans && (
                     <span style={{ fontSize: '0.8rem', color: '#38bdf8', fontWeight: 600 }}>
-                      ✓ עודכן
+                      {slogansList.length === 1 ? '✓ סלוגן 1' : `✓ ${slogansList.length} סלוגנים`}
                     </span>
                   )}
                 </div>
 
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-                  {hasSlogan ? (
-                    <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#ffffff', lineHeight: 1.35 }}>
-                      "{entry.sentence}"
-                    </div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.6rem', justifyContent: 'center' }}>
+                  {hasSlogans ? (
+                    slogansList.map((slog, idx) => (
+                      <div
+                        key={slog.id || idx}
+                        style={{
+                          fontSize: '1.2rem',
+                          fontWeight: 700,
+                          color: '#ffffff',
+                          lineHeight: 1.35,
+                          borderBottom: idx < slogansList.length - 1 ? '1px solid rgba(255,255,255,0.1)' : 'none',
+                          paddingBottom: idx < slogansList.length - 1 ? '0.4rem' : '0',
+                        }}
+                      >
+                        {slogansList.length > 1 && (
+                          <span style={{ fontSize: '0.85rem', color: '#38bdf8', marginLeft: '6px' }}>
+                            #{idx + 1}
+                          </span>
+                        )}
+                        "{slog.sentence}"
+                      </div>
+                    ))
                   ) : (
                     <div style={{ fontSize: '0.95rem', color: '#64748b', fontStyle: 'italic' }}>
                       ממתין לסלוגן...
