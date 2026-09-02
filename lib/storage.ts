@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 
 export interface GalleryItem {
   id: string;
@@ -10,43 +11,66 @@ export interface GalleryItem {
   time: number;
   token?: string;
   filename?: string;
+  dataUrl?: string; // In-memory/serverless fallback
 }
 
-const DATA_DIR = path.join(process.cwd(), 'data');
-const DATA_FILE = path.join(DATA_DIR, 'gallery.json');
-const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
-
-// In-memory fallback if filesystem is read-only (e.g. serverless environment)
 let memoryStore: GalleryItem[] = [];
 let isMemoryStoreInitialized = false;
 
-function ensureDirectories() {
+export function getUploadsDir(): string {
+  const localDir = path.join(process.cwd(), 'public', 'uploads');
   try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
+    if (!fs.existsSync(localDir)) {
+      fs.mkdirSync(localDir, { recursive: true });
     }
-    if (!fs.existsSync(UPLOADS_DIR)) {
-      fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+    fs.accessSync(localDir, fs.constants.W_OK);
+    return localDir;
+  } catch (e) {
+    const tmpDir = path.join(os.tmpdir(), 'tnuva-uploads');
+    try {
+      if (!fs.existsSync(tmpDir)) {
+        fs.mkdirSync(tmpDir, { recursive: true });
+      }
+    } catch {}
+    return tmpDir;
+  }
+}
+
+export function getDataFilePath(): string {
+  const localDir = path.join(process.cwd(), 'data');
+  const localFile = path.join(localDir, 'gallery.json');
+  try {
+    if (!fs.existsSync(localDir)) {
+      fs.mkdirSync(localDir, { recursive: true });
     }
-  } catch (err) {
-    console.warn('Filesystem access warning (using memory store fallback):', err);
+    fs.accessSync(localDir, fs.constants.W_OK);
+    return localFile;
+  } catch (e) {
+    const tmpDir = path.join(os.tmpdir(), 'tnuva-data');
+    try {
+      if (!fs.existsSync(tmpDir)) {
+        fs.mkdirSync(tmpDir, { recursive: true });
+      }
+    } catch {}
+    return path.join(tmpDir, 'gallery.json');
   }
 }
 
 export async function getGalleryItems(): Promise<GalleryItem[]> {
-  ensureDirectories();
+  const dataFile = getDataFilePath();
   try {
-    if (fs.existsSync(DATA_FILE)) {
-      const raw = fs.readFileSync(DATA_FILE, 'utf-8');
+    if (fs.existsSync(dataFile)) {
+      const raw = fs.readFileSync(dataFile, 'utf-8');
       const items: GalleryItem[] = JSON.parse(raw);
       memoryStore = items;
       isMemoryStoreInitialized = true;
       return items;
     }
   } catch (err) {
-    console.warn('Could not read gallery.json, falling back to memory store:', err);
+    console.warn('Filesystem read warning (using memory store fallback):', err);
   }
   if (!isMemoryStoreInitialized) {
+    // Initial dummy / fallback seed if needed
     memoryStore = [];
     isMemoryStoreInitialized = true;
   }
@@ -54,13 +78,13 @@ export async function getGalleryItems(): Promise<GalleryItem[]> {
 }
 
 export async function saveGalleryItems(items: GalleryItem[]): Promise<void> {
-  ensureDirectories();
   memoryStore = [...items];
   isMemoryStoreInitialized = true;
+  const dataFile = getDataFilePath();
   try {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(items, null, 2), 'utf-8');
+    fs.writeFileSync(dataFile, JSON.stringify(items, null, 2), 'utf-8');
   } catch (err) {
-    console.warn('Could not write to gallery.json (running in memory):', err);
+    console.warn('Could not write to dataFile (running in memory):', err);
   }
 }
 
@@ -74,20 +98,20 @@ export async function deleteGalleryItemsByUrls(urls: string[]): Promise<string[]
   const items = await getGalleryItems();
   const deletedUrls: string[] = [];
   const remaining: GalleryItem[] = [];
-
   const urlSet = new Set(urls);
+  const uploadsDir = getUploadsDir();
 
   for (const item of items) {
     if (urlSet.has(item.url)) {
       deletedUrls.push(item.url);
-      if (item.url.startsWith('/uploads/')) {
-        const localPath = path.join(process.cwd(), 'public', item.url);
+      if (item.filename) {
+        const filePath = path.join(uploadsDir, item.filename);
         try {
-          if (fs.existsSync(localPath)) {
-            fs.unlinkSync(localPath);
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
           }
         } catch (e) {
-          console.warn('Could not delete local file:', localPath, e);
+          console.warn('Could not delete file:', filePath, e);
         }
       }
     } else {
@@ -125,7 +149,6 @@ export async function reorderGalleryItems(orderUrls: string[]): Promise<void> {
     }
   }
 
-  // Append any remaining items that were not in the order list
   Array.from(itemMap.values()).forEach((remainingItem) => {
     newOrder.push(remainingItem);
   });
