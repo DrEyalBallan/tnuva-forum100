@@ -123,7 +123,7 @@ export default function UserUploadPage() {
     <main className="container upload-page">
       <div className="upload-card animate-fade-in" dir="rtl">
         <img
-          src="/logo-pisga.png"
+          src="/logo-wd.png?v=3"
           alt="פסגה - פורום 100"
           style={{ maxWidth: '250px', width: '100%', height: 'auto', margin: '0 auto 1.5rem auto', display: 'block' }}
         />
