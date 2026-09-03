@@ -55,11 +55,12 @@ export default function CommitmentsPage() {
     <main className="container" style={{ minHeight: '100vh', padding: '2.5rem 1.5rem 4rem' }} dir="rtl">
       {/* Header */}
       <div className="text-center animate-fade-in mb-2">
-        <img
-          src="/logo-pisga.png"
-          alt="פסגה - פורום 100"
-          style={{ maxWidth: '220px', width: '100%', height: 'auto', margin: '0 auto 1.25rem auto', display: 'block' }}
-        />
+        <div className="logo-badge-capsule">
+          <img
+            src="/logo-pisga.png"
+            alt="פסגה - פורום 100"
+          />
+        </div>
         <h1 className="title">
           פורום 100 – מודל מנהיגות
         </h1>
