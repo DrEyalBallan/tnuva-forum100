@@ -10,13 +10,13 @@ export default function UserUploadPage() {
   const [group, setGroup] = useState('1');
   const [sentence, setSentence] = useState('');
   const [commitment, setCommitment] = useState('');
-  const [uploadedItem, setUploadedItem] = useState<{ url: string; token: string } | null>(null);
+  const [uploadedItem, setUploadedItem] = useState<{ url: string; token: string; group: string; sentence: string; commitment: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDelete = async () => {
     if (!uploadedItem) return;
-    if (!confirm('האם אתם בטוחים שברצונכם למחוק את התמונה שהעליתם?')) return;
+    if (!confirm('האם אתם בטוחים שברצונכם למחוק את התוכן שהעליתם?')) return;
 
     setIsDeleting(true);
     try {
@@ -29,15 +29,27 @@ export default function UserUploadPage() {
       if (res.ok) {
         setIsSuccess(false);
         setUploadedItem(null);
-        alert('התמונה נמחקה בהצלחה!');
+        alert('התוכן נמחק בהצלחה!');
       } else {
-        alert('מחיקת התמונה נכשלה. אנא פנו למנהל.');
+        alert('מחיקת התוכן נכשלה. אנא פנו למנהל.');
       }
     } catch (e) {
       console.error(e);
-      alert('שגיאה במחיקת התמונה.');
+      alert('שגיאה במחיקת התוכן.');
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleResetForNewUpload = () => {
+    setIsSuccess(false);
+    setUploadedItem(null);
+    setSentence('');
+    setCommitment('');
+    setErrorMessage('');
+    setProgress(0);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -50,13 +62,17 @@ export default function UserUploadPage() {
     setIsSuccess(false);
     setProgress(0);
 
+    const currentSentence = sentence.trim();
+    const currentCommitment = commitment.trim();
+    const currentGroup = group;
+
     try {
       const clientToken = Math.random().toString(36).slice(2, 12);
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('group', group);
-      formData.append('sentence', sentence.trim());
-      formData.append('commitment', commitment.trim());
+      formData.append('group', currentGroup);
+      formData.append('sentence', currentSentence);
+      formData.append('commitment', currentCommitment);
       formData.append('token', clientToken);
 
       // Simulated smooth progress while uploading
@@ -79,7 +95,13 @@ export default function UserUploadPage() {
 
       const data = await response.json();
       setProgress(100);
-      setUploadedItem({ url: data.url, token: data.token || clientToken });
+      setUploadedItem({
+        url: data.url,
+        token: data.token || clientToken,
+        group: currentGroup,
+        sentence: currentSentence,
+        commitment: currentCommitment,
+      });
       setIsSuccess(true);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -99,7 +121,7 @@ export default function UserUploadPage() {
 
   return (
     <main className="container upload-page">
-      <div className="glass-panel animate-fade-in upload-card" dir="rtl">
+      <div className="upload-card animate-fade-in" dir="rtl">
         <img
           src="/logo-pisga.png"
           alt="פסגה - פורום 100"
@@ -109,141 +131,196 @@ export default function UserUploadPage() {
           פורום 100 – מודל מנהיגות
         </h1>
         <p className="subtitle text-center mb-2" dir="rtl">
-          בחרו את הקבוצה שלכם, העלו את התמונה, הסלוגן וההתחייבות לפעולה שיצרתם
+          בחרו את הקבוצה שלכם, הזינו סלוגן והתחייבות לפעולה, והעלו את התמונה שיצרתם
         </p>
 
-        {/* Group Selector */}
-        <div className="input-group mb-2" dir="rtl">
-          <label htmlFor="group-select" className="input-label" dir="rtl">
-            הקבוצה שלכם (1-20)
-          </label>
-          <select
-            id="group-select"
-            className="modern-input"
-            dir="rtl"
-            value={group}
-            onChange={(e) => setGroup(e.target.value)}
-            disabled={isUploading}
-          >
-            {Array.from({ length: 20 }, (_, i) => i + 1).map((num) => (
-              <option key={num} value={num.toString()}>
-                קבוצה {num}
-              </option>
-            ))}
-          </select>
-        </div>
+        {!isSuccess ? (
+          <>
+            {/* 1. Group Selector */}
+            <div className="input-group mb-2" dir="rtl">
+              <label htmlFor="group-select" className="input-label" dir="rtl">
+                1. הקבוצה שלכם (1-20)
+              </label>
+              <select
+                id="group-select"
+                className="modern-input"
+                dir="rtl"
+                value={group}
+                onChange={(e) => setGroup(e.target.value)}
+                disabled={isUploading}
+              >
+                {Array.from({ length: 20 }, (_, i) => i + 1).map((num) => (
+                  <option key={num} value={num.toString()}>
+                    קבוצה {num}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-        {/* Slogan Input (סלוגן) */}
-        <div className="input-group mb-2" dir="rtl">
-          <label htmlFor="sentence-input" className="input-label" dir="rtl">
-            סלוגן (עד 80 תווים)
-          </label>
-          <input
-            id="sentence-input"
-            type="text"
-            className="modern-input"
-            placeholder="הקלידו כאן סלוגן..."
-            maxLength={80}
-            dir="rtl"
-            value={sentence}
-            onChange={(e) => setSentence(e.target.value)}
-            disabled={isUploading}
-          />
-        </div>
+            {/* 2. Slogan Input (סלוגן) */}
+            <div className="input-group mb-2" dir="rtl">
+              <label htmlFor="sentence-input" className="input-label" dir="rtl">
+                2. סלוגן (עד 80 תווים)
+              </label>
+              <input
+                id="sentence-input"
+                type="text"
+                className="modern-input"
+                placeholder="הקלידו כאן סלוגן..."
+                maxLength={80}
+                dir="rtl"
+                value={sentence}
+                onChange={(e) => setSentence(e.target.value)}
+                disabled={isUploading}
+              />
+            </div>
 
-        {/* Commitment to Action ("התחייבות לפעולה") */}
-        <div className="input-group mb-2" dir="rtl">
-          <label htmlFor="commitment-input" className="input-label" dir="rtl">
-            התחייבות לפעולה
-          </label>
-          <textarea
-            id="commitment-input"
-            className="modern-input"
-            placeholder="הקלידו כאן את ההתחייבות לפעולה..."
-            maxLength={160}
-            rows={2}
-            dir="rtl"
-            value={commitment}
-            onChange={(e) => setCommitment(e.target.value)}
-            disabled={isUploading}
-          />
-        </div>
+            {/* 3. Commitment to Action ("התחייבות לפעולה") */}
+            <div className="input-group mb-2" dir="rtl">
+              <label htmlFor="commitment-input" className="input-label" dir="rtl">
+                3. התחייבות לפעולה
+              </label>
+              <textarea
+                id="commitment-input"
+                className="modern-input"
+                placeholder="הקלידו כאן את ההתחייבות לפעולה..."
+                maxLength={160}
+                rows={2}
+                dir="rtl"
+                value={commitment}
+                onChange={(e) => setCommitment(e.target.value)}
+                disabled={isUploading}
+              />
+            </div>
 
-        {/* Hidden File Input */}
-        <input
-          type="file"
-          accept="image/*,video/*"
-          style={{ display: 'none' }}
-          ref={fileInputRef}
-          onChange={handleFileChange}
-        />
+            {/* Hidden File Input */}
+            <input
+              type="file"
+              accept="image/*,video/*"
+              style={{ display: 'none' }}
+              ref={fileInputRef}
+              onChange={handleFileChange}
+            />
 
-        {/* Main Upload Button */}
-        {!isSuccess && (
-          <button
-            className="btn-primary huge-btn"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading || isDeleting}
-          >
-            {isUploading ? (
-              <div className="upload-status">
-                <span className="loader" />
-                <p>מעלה... {progress > 0 && `${Math.round(progress)}%`}</p>
-                {progress > 0 && (
-                  <div
-                    style={{
-                      width: '100%',
-                      backgroundColor: 'rgba(255,255,255,0.2)',
-                      borderRadius: '4px',
-                      marginTop: '8px',
-                      overflow: 'hidden',
-                    }}
-                  >
+            {/* 4. Main Upload Button */}
+            <button
+              className="btn-primary huge-btn"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading || isDeleting}
+              style={{ marginTop: '0.5rem' }}
+            >
+              {isUploading ? (
+                <div className="upload-status">
+                  <span className="loader" style={{ borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#fff' }} />
+                  <p>מעלה... {progress > 0 && `${Math.round(progress)}%`}</p>
+                  {progress > 0 && (
                     <div
                       style={{
-                        width: `${progress}%`,
-                        height: '8px',
-                        backgroundColor: '#38bdf8',
+                        width: '100%',
+                        backgroundColor: 'rgba(255,255,255,0.3)',
                         borderRadius: '4px',
-                        transition: 'width 0.2s ease',
+                        marginTop: '8px',
+                        overflow: 'hidden',
                       }}
-                    />
+                    >
+                      <div
+                        style={{
+                          width: `${progress}%`,
+                          height: '8px',
+                          backgroundColor: '#ffffff',
+                          borderRadius: '4px',
+                          transition: 'width 0.2s ease',
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              ) : (
+                '🚀 4. העלאת תמונה'
+              )}
+            </button>
+          </>
+        ) : (
+          /* RICH CONFIRMATION CARD ON SUCCESS */
+          <div className="animate-fade-in" style={{ textAlign: 'center', marginTop: '1rem' }} dir="rtl">
+            <div
+              style={{
+                background: '#f0fdf4',
+                border: '2px solid #86efac',
+                borderRadius: '18px',
+                padding: '1.75rem 1.5rem',
+                marginBottom: '1.5rem',
+              }}
+            >
+              <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>✅</div>
+              <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#15803d', marginBottom: '0.5rem' }}>
+                התוכן התקבל ושודר בהצלחה!
+              </h2>
+              <p style={{ color: '#166534', fontSize: '1.05rem', marginBottom: '1.25rem' }}>
+                הסלוגן, ההתחייבות לפעולה והתמונה שלכם נקלטו במערכת ושודרו לכלל המסכים.
+              </p>
+
+              {/* Summary details box */}
+              {uploadedItem && (
+                <div
+                  style={{
+                    background: '#ffffff',
+                    border: '1px solid #bbf7d0',
+                    borderRadius: '12px',
+                    padding: '1rem 1.25rem',
+                    textAlign: 'right',
+                    fontSize: '0.95rem',
+                    color: '#1e293b',
+                    lineHeight: '1.6',
+                  }}
+                >
+                  <div style={{ marginBottom: '0.4rem' }}>
+                    <strong style={{ color: '#0052cc' }}>קבוצה:</strong> קבוצה {uploadedItem.group}
                   </div>
-                )}
-              </div>
-            ) : (
-              '🚀 העלאת תמונה'
-            )}
-          </button>
-        )}
+                  {uploadedItem.sentence && (
+                    <div style={{ marginBottom: '0.4rem' }}>
+                      <strong style={{ color: '#0284c7' }}>סלוגן:</strong> "{uploadedItem.sentence}"
+                    </div>
+                  )}
+                  {uploadedItem.commitment && (
+                    <div>
+                      <strong style={{ color: '#7c3aed' }}>התחייבות לפעולה:</strong> {uploadedItem.commitment}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
-        {/* Success message */}
-        {isSuccess && (
-          <div className="success-msg animate-fade-in mt-1" dir="rtl">
-            ✨ התמונה והמשפט התקבלו בהצלחה.
+            {/* Action buttons after success */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <button
+                className="btn-primary"
+                style={{ width: '100%', padding: '12px', borderRadius: '12px', fontSize: '1.1rem', fontWeight: 700 }}
+                onClick={handleResetForNewUpload}
+              >
+                ➕ העלאת תוכן נוסף / עדכון
+              </button>
+
+              {uploadedItem && (
+                <button
+                  className="btn-secondary"
+                  style={{
+                    backgroundColor: '#fff1f2',
+                    color: '#e11d48',
+                    border: '1px solid #fecdd3',
+                    width: '100%',
+                    padding: '10px',
+                    borderRadius: '12px',
+                    fontWeight: 700,
+                  }}
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? 'מוחק...' : '🗑️ ביטול ומחיקת התוכן שהעליתי'}
+                </button>
+              )}
+            </div>
           </div>
-        )}
-
-        {/* Self Delete Button */}
-        {isSuccess && uploadedItem && (
-          <button
-            className="btn-secondary mt-1 animate-fade-in"
-            style={{
-              backgroundColor: 'rgba(239, 68, 68, 0.15)',
-              color: '#f87171',
-              border: '1px solid #ef4444',
-              width: '100%',
-              padding: '12px',
-              borderRadius: '10px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              marginTop: '1rem',
-            }}
-            onClick={handleDelete}
-            disabled={isDeleting}
-          >
-            {isDeleting ? 'מוחק...' : '🗑️ ביטול ומחיקת התמונה שלי'}
-          </button>
         )}
 
         {/* Error message */}
