@@ -92,12 +92,11 @@ export default function RapperPage() {
     >
       {/* Header */}
       <div className="text-center animate-fade-in mb-2">
-        <div className="logo-badge-capsule">
-          <img
-            src="/logo-pisga.png"
-            alt="פסגה - פורום 100"
-          />
-        </div>
+        <img
+          src="/logo-pisga.png"
+          alt="פסגה - פורום 100"
+          style={{ maxWidth: '240px', width: '100%', height: 'auto', margin: '0 auto 1.25rem auto', display: 'block' }}
+        />
         <h1 className="title" style={{ fontSize: '2.4rem', marginBottom: '0.25rem' }}>
           🎤 סלוגנים לראפר
         </h1>
