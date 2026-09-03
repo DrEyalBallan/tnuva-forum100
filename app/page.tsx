@@ -122,11 +122,12 @@ export default function UserUploadPage() {
   return (
     <main className="container upload-page">
       <div className="upload-card animate-fade-in" dir="rtl">
-        <img
-          src="/logo-pisga.png"
-          alt="פסגה - פורום 100"
-          style={{ maxWidth: '240px', width: '100%', height: 'auto', margin: '0 auto 1.5rem auto', display: 'block' }}
-        />
+        <div className="logo-badge-capsule">
+          <img
+            src="/logo-pisga.png"
+            alt="פסגה - פורום 100"
+          />
+        </div>
         <h1 className="title text-center" dir="rtl">
           פורום 100 – מודל מנהיגות
         </h1>
