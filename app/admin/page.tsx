@@ -352,7 +352,7 @@ export default function AdminPage() {
               onClick={() => fileInputRef.current?.click()}
               className="save-order-button"
               disabled={isBulkUploading}
-              style={{ background: '#8b5cf6' }}
+              style={{ background: '#7c3aed', padding: '9px 18px', borderRadius: '10px' }}
             >
               {isBulkUploading ? `מעלה ${uploadProgress.current}/${uploadProgress.total}...` : '📤 העלאה מרוכזת'}
             </button>
@@ -362,6 +362,7 @@ export default function AdminPage() {
                 onClick={handleSaveOrder}
                 className="save-order-button"
                 disabled={isSavingOrder}
+                style={{ background: '#16a34a', padding: '9px 18px', borderRadius: '10px' }}
               >
                 {isSavingOrder ? 'שומר...' : '💾 שמירת סדר חדש'}
               </button>
@@ -369,7 +370,7 @@ export default function AdminPage() {
               <button
                 onClick={() => setIsReorderMode(true)}
                 className="save-order-button"
-                style={{ background: '#3b82f6' }}
+                style={{ background: '#0284c7', padding: '9px 18px', borderRadius: '10px' }}
               >
                 🔄 מצב סידור מחדש
               </button>
@@ -378,7 +379,7 @@ export default function AdminPage() {
             <a
               href="/rapper"
               className="logout-button"
-              style={{ textDecoration: 'none', background: 'rgba(2, 132, 199, 0.25)', color: '#38bdf8', borderColor: 'rgba(56, 189, 248, 0.4)' }}
+              style={{ textDecoration: 'none', background: '#f0f9ff', color: '#0284c7', borderColor: '#bae6fd', fontWeight: 700, padding: '8px 16px', borderRadius: '10px' }}
             >
               🎤 עמוד ראפר
             </a>
@@ -386,12 +387,12 @@ export default function AdminPage() {
             <a
               href="/commitments"
               className="logout-button"
-              style={{ textDecoration: 'none', background: 'rgba(139, 92, 246, 0.25)', color: '#c084fc', borderColor: 'rgba(192, 132, 252, 0.4)' }}
+              style={{ textDecoration: 'none', background: '#f5f3ff', color: '#7c3aed', borderColor: '#ddd6fe', fontWeight: 700, padding: '8px 16px', borderRadius: '10px' }}
             >
               📜 לוח התחייבויות
             </a>
 
-            <button onClick={handleLogout} className="logout-button">
+            <button onClick={handleLogout} className="logout-button" style={{ fontWeight: 700, padding: '8px 16px', borderRadius: '10px' }}>
               התנתק
             </button>
           </div>
@@ -508,7 +509,7 @@ export default function AdminPage() {
                   )}
 
                   {/* Media Preview & Index Badge */}
-                  <div style={{ position: 'relative' }}>
+                  <div className="image-preview">
                     {isReorderMode && (
                       <div
                         style={{
