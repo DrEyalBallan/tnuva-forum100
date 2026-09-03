@@ -56,7 +56,7 @@ export default function CommitmentsPage() {
       {/* Header */}
       <div className="text-center animate-fade-in mb-2">
         <img
-          src="/logo-pisga.png"
+          src="/logo-wd.png?v=3"
           alt="פסגה - פורום 100"
           style={{ maxWidth: '240px', width: '100%', height: 'auto', margin: '0 auto 1.25rem auto', display: 'block' }}
         />
