@@ -66,6 +66,11 @@ export default function StreamPage() {
     return (
       <main className="stream-container setup-screen hub-3d">
         <div className="hub-container">
+          <img
+            src="/logo-wd.png?v=3"
+            alt="פסגה - פורום 100"
+            style={{ maxWidth: '240px', width: '100%', height: 'auto', margin: '0 auto 1.5rem auto', display: 'block' }}
+          />
           <h1 className="hub-title" dir="rtl">
             פאנל ניהול הקרנה
           </h1>
