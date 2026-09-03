@@ -63,7 +63,7 @@ export default function CommitmentsPage() {
         <h1 className="title">
           פורום 100 – מודל מנהיגות
         </h1>
-        <h2 style={{ fontSize: '1.75rem', color: '#38bdf8', fontWeight: 700, marginBottom: '0.5rem' }}>
+        <h2 style={{ fontSize: '1.75rem', color: '#0284c7', fontWeight: 800, marginBottom: '0.5rem' }}>
           📜 לוח התחייבויות לפעולה
         </h2>
         <p className="subtitle" style={{ maxWidth: '600px', margin: '0 auto 1.5rem auto' }}>
@@ -75,7 +75,7 @@ export default function CommitmentsPage() {
           <a
             href="/stream"
             className="save-order-button"
-            style={{ textDecoration: 'none', background: '#3b82f6', padding: '9px 20px', borderRadius: '10px' }}
+            style={{ textDecoration: 'none', background: '#0052cc', padding: '9px 20px', borderRadius: '10px' }}
           >
             📺 מעבר למסך הקרנה
           </a>
@@ -104,18 +104,19 @@ export default function CommitmentsPage() {
             flexWrap: 'wrap',
             maxWidth: '900px',
             margin: '0 auto 2.5rem auto',
-            background: 'rgba(255,255,255,0.05)',
+            background: '#ffffff',
             padding: '1rem',
             borderRadius: '16px',
-            border: '1px solid rgba(255,255,255,0.1)'
+            border: '1px solid #e2e8f0',
+            boxShadow: '0 4px 15px rgba(15, 23, 42, 0.04)'
           }}
         >
           <button
             onClick={() => setSelectedGroup('all')}
             style={{
-              background: selectedGroup === 'all' ? '#38bdf8' : 'rgba(255,255,255,0.08)',
-              color: selectedGroup === 'all' ? '#0f172a' : '#fff',
-              border: 'none',
+              background: selectedGroup === 'all' ? '#0284c7' : '#f1f5f9',
+              color: selectedGroup === 'all' ? '#ffffff' : '#334155',
+              border: selectedGroup === 'all' ? 'none' : '1px solid #cbd5e1',
               padding: '8px 16px',
               borderRadius: '8px',
               fontWeight: 700,
@@ -133,12 +134,12 @@ export default function CommitmentsPage() {
                 key={grp}
                 onClick={() => setSelectedGroup(grp.toString())}
                 style={{
-                  background: isSelected ? '#38bdf8' : 'rgba(255,255,255,0.08)',
-                  color: isSelected ? '#0f172a' : count > 0 ? '#fff' : '#64748b',
-                  border: 'none',
+                  background: isSelected ? '#0284c7' : '#ffffff',
+                  color: isSelected ? '#ffffff' : count > 0 ? '#0f172a' : '#94a3b8',
+                  border: isSelected ? 'none' : '1px solid #e2e8f0',
                   padding: '8px 14px',
                   borderRadius: '8px',
-                  fontWeight: 600,
+                  fontWeight: isSelected || count > 0 ? 700 : 500,
                   cursor: 'pointer',
                   transition: 'all 0.2s',
                 }}
@@ -154,14 +155,14 @@ export default function CommitmentsPage() {
       {isLoading ? (
         <div className="text-center" style={{ padding: '3rem' }}>
           <div className="loader" style={{ width: '40px', height: '40px', margin: '0 auto 1rem auto' }} />
-          <p style={{ color: '#94a3b8' }}>טוען התחייבויות...</p>
+          <p style={{ color: '#64748b' }}>טוען התחייבויות...</p>
         </div>
       ) : filtered.length === 0 ? (
         <div
           className="glass-panel text-center"
           style={{ maxWidth: '600px', margin: '2rem auto', padding: '3rem 2rem' }}
         >
-          <p style={{ fontSize: '1.25rem', color: '#94a3b8' }}>
+          <p style={{ fontSize: '1.25rem', color: '#64748b' }}>
             טרם הוזנו התחייבויות לפעולה {selectedGroup !== 'all' ? `עבור קבוצה ${selectedGroup}` : ''}.
           </p>
           <a
@@ -189,12 +190,13 @@ export default function CommitmentsPage() {
                 key={item.id || item.url || index}
                 className="glass-panel animate-fade-in"
                 style={{
-                  padding: '1.5rem',
+                  padding: '1.75rem',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
                   position: 'relative',
-                  borderTop: '3px solid #38bdf8',
+                  borderTop: '4px solid #0284c7',
+                  background: '#ffffff',
                 }}
               >
                 {/* Card Top: Group & Time */}
@@ -202,18 +204,18 @@ export default function CommitmentsPage() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                     <span
                       style={{
-                        background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(59, 130, 246, 0.2))',
-                        color: '#38bdf8',
-                        padding: '5px 12px',
-                        borderRadius: '6px',
-                        fontWeight: 700,
+                        background: 'linear-gradient(135deg, #e0f2fe, #bae6fd)',
+                        color: '#0369a1',
+                        padding: '5px 14px',
+                        borderRadius: '8px',
+                        fontWeight: 800,
                         fontSize: '0.95rem',
-                        border: '1px solid rgba(56, 189, 248, 0.3)'
+                        border: '1px solid #7dd3fc'
                       }}
                     >
                       {item.group === 0 ? 'כללי' : `קבוצה ${item.group}`}
                     </span>
-                    <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                    <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
                       {new Date(item.time).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
@@ -221,28 +223,31 @@ export default function CommitmentsPage() {
                   {/* Commitment Box */}
                   <div
                     style={{
-                      background: 'rgba(56, 189, 248, 0.08)',
-                      borderRight: '4px solid #38bdf8',
+                      background: '#f8fafc',
+                      borderRight: '4px solid #0284c7',
+                      border: '1px solid #e2e8f0',
+                      borderRightWidth: '4px',
+                      borderRightColor: '#0284c7',
                       padding: '1.1rem 1.25rem',
                       borderRadius: '0 12px 12px 0',
                       marginBottom: '1.25rem',
                     }}
                   >
-                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#38bdf8', marginBottom: '0.35rem' }}>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#0284c7', marginBottom: '0.35rem' }}>
                       ✨ התחייבות לפעולה:
                     </div>
-                    <div style={{ fontSize: '1.2rem', fontWeight: 600, color: '#ffffff', lineHeight: 1.4 }}>
-                      {item.commitment || <span style={{ opacity: 0.5, fontSize: '1rem' }}>ללא פירוט התחייבות</span>}
+                    <div style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f172a', lineHeight: 1.45 }}>
+                      {item.commitment || <span style={{ color: '#94a3b8', fontSize: '1rem' }}>ללא פירוט התחייבות</span>}
                     </div>
                   </div>
 
                   {/* Slogan */}
                   {item.sentence && (
                     <div style={{ marginBottom: '1.25rem' }}>
-                      <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '0.2rem' }}>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginBottom: '0.2rem' }}>
                         🎯 סלוגן הקבוצה:
                       </div>
-                      <div style={{ fontSize: '1.05rem', fontWeight: 500, color: '#e2e8f0' }}>
+                      <div style={{ fontSize: '1.05rem', fontWeight: 600, color: '#334155' }}>
                         "{item.sentence}"
                       </div>
                     </div>
@@ -251,7 +256,7 @@ export default function CommitmentsPage() {
 
                 {/* Media Thumbnail */}
                 {item.url && (
-                  <div style={{ borderRadius: '10px', overflow: 'hidden', maxHeight: '180px', marginTop: '0.5rem' }}>
+                  <div style={{ borderRadius: '10px', overflow: 'hidden', maxHeight: '180px', marginTop: '0.5rem', border: '1px solid #e2e8f0' }}>
                     {isVideo ? (
                       <video
                         src={item.url}
