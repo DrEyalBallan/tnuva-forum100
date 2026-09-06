@@ -340,6 +340,25 @@ export default function AdminPage() {
     }
   };
 
+  // Download offline single-file HTML slideshow
+  const handleDownloadOffline = async (mode: 'all' | 'images' | 'commitments' | 'rapper' = 'all') => {
+    try {
+      const res = await fetch(`/api/admin/export-offline?mode=${mode}`);
+      if (!res.ok) throw new Error('הורדת המצגת נכשלה');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'מצגת-אופליין-פורום-100.html';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e: any) {
+      alert('שגיאה בהורדת המצגת: ' + (e?.message || e));
+    }
+  };
+
   // Not authenticated view
   if (!isAuthenticated) {
     return (
@@ -434,6 +453,60 @@ export default function AdminPage() {
 
             <button onClick={handleLogout} className="logout-button" style={{ fontWeight: 700, padding: '8px 16px', borderRadius: '10px' }}>
               התנתק
+            </button>
+          </div>
+        </div>
+
+        {/* Offline HTML Standalone Slideshow Export Section */}
+        <div
+          dir="rtl"
+          style={{
+            background: 'linear-gradient(135deg, #eff6ff 0%, #ede9fe 100%)',
+            border: '2px solid #818cf8',
+            borderRadius: '16px',
+            padding: '1.3rem 1.6rem',
+            marginBottom: '1.25rem',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '1rem',
+            boxShadow: '0 4px 15px rgba(99, 102, 241, 0.12)',
+          }}
+        >
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: '#1e1b4b', margin: 0 }}>
+                ⭐ מצגת אופליין מושלמת (נגן HTML עצמאי - מומלץ ביותר להקרנה)
+              </h3>
+              <span style={{ background: '#22c55e', color: '#ffffff', fontSize: '0.75rem', fontWeight: 800, padding: '3px 8px', borderRadius: '12px' }}>
+                100% ללא תקלות
+              </span>
+            </div>
+            <p style={{ fontSize: '0.92rem', color: '#4338ca', margin: 0 }}>
+              קובץ יחיד שנפתח מיידית בדפדפן (Chrome / Edge / Safari) בלחיצה כפולה. עובד באופליין מלא, כולל מסך מלא 16:9, ללא עיוות תמונות וללא שום בעיות פונטים של PowerPoint.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => handleDownloadOffline('all')}
+              style={{
+                background: 'linear-gradient(135deg, #4f46e5, #4338ca)',
+                color: '#ffffff',
+                border: 'none',
+                padding: '10px 20px',
+                borderRadius: '12px',
+                fontWeight: 800,
+                fontSize: '1rem',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 4px 12px rgba(79, 70, 229, 0.35)',
+              }}
+            >
+              🚀 הורד מצגת אופליין מלאה (HTML)
             </button>
           </div>
         </div>
