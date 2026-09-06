@@ -25,7 +25,6 @@ export default function AdminPage() {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [isBulkUploading, setIsBulkUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
-  const [downloadingPptx, setDownloadingPptx] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Check saved session password
@@ -309,37 +308,6 @@ export default function AdminPage() {
     }
   };
 
-  // Download real-time PPTX slideshows
-  const handleDownloadPptx = async (type: 'images' | 'rapper' | 'commitments') => {
-    setDownloadingPptx(type);
-    try {
-      const res = await fetch(`/api/admin/export-pptx?type=${type}`);
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || 'הורדת המצגת נכשלה');
-      }
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      const filenames: Record<string, string> = {
-        images: 'מצגת-תמונות-הקבוצות-תנובה.pptx',
-        rapper: 'מצגת-סלוגנים-לראפר-תנובה.pptx',
-        commitments: 'מצגת-התחייבויות-לפעולה-תנובה.pptx',
-      };
-      a.download = filenames[type] || 'מצגת-תנובה.pptx';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (e: any) {
-      console.error('PPTX download error:', e);
-      alert('שגיאה בהורדת המצגת: ' + (e?.message || e));
-    } finally {
-      setDownloadingPptx(null);
-    }
-  };
-
   // Download offline single-file HTML slideshow
   const handleDownloadOffline = async (mode: 'all' | 'images' | 'commitments' | 'rapper' = 'all') => {
     try {
@@ -573,98 +541,6 @@ export default function AdminPage() {
               }}
             >
               🚀 מצגת משולבת (3 ב-1)
-            </button>
-          </div>
-        </div>
-
-        {/* PowerPoint Live Slideshows Export Section */}
-        <div
-          dir="rtl"
-          style={{
-            background: 'linear-gradient(135deg, #f0fdf4 0%, #f0f9ff 100%)',
-            border: '1.5px solid #bae6fd',
-            borderRadius: '16px',
-            padding: '1.25rem 1.5rem',
-            marginBottom: '1.5rem',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '1rem',
-            boxShadow: '0 2px 10px rgba(2, 132, 199, 0.06)',
-          }}
-        >
-          <div>
-            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', margin: '0 0 4px 0' }}>
-              📥 הורדת מצגות PowerPoint (PPTX) בזמן אמת
-            </h3>
-            <p style={{ fontSize: '0.9rem', color: '#64748b', margin: 0 }}>
-              מייצר קובצי PPTX אמיתיים מעוצבים ומוכנים להקרנה על פי התוכן העדכני במערכת
-            </p>
-          </div>
-
-          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <button
-              onClick={() => handleDownloadPptx('images')}
-              disabled={downloadingPptx !== null}
-              style={{
-                background: '#0284c7',
-                color: '#ffffff',
-                border: 'none',
-                padding: '9px 16px',
-                borderRadius: '10px',
-                fontWeight: 700,
-                fontSize: '0.95rem',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                boxShadow: '0 2px 8px rgba(2, 132, 199, 0.25)',
-              }}
-            >
-              {downloadingPptx === 'images' ? '⏳ מייצר מצגת...' : '🖼️ מצגת תמונות (PPTX)'}
-            </button>
-
-            <button
-              onClick={() => handleDownloadPptx('rapper')}
-              disabled={downloadingPptx !== null}
-              style={{
-                background: '#0052cc',
-                color: '#ffffff',
-                border: 'none',
-                padding: '9px 16px',
-                borderRadius: '10px',
-                fontWeight: 700,
-                fontSize: '0.95rem',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                boxShadow: '0 2px 8px rgba(0, 82, 204, 0.25)',
-              }}
-            >
-              {downloadingPptx === 'rapper' ? '⏳ מייצר מצגת...' : '🎤 סלוגנים לראפר (PPTX)'}
-            </button>
-
-            <button
-              onClick={() => handleDownloadPptx('commitments')}
-              disabled={downloadingPptx !== null}
-              style={{
-                background: '#7c3aed',
-                color: '#ffffff',
-                border: 'none',
-                padding: '9px 16px',
-                borderRadius: '10px',
-                fontWeight: 700,
-                fontSize: '0.95rem',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                boxShadow: '0 2px 8px rgba(124, 58, 237, 0.25)',
-              }}
-            >
-              {downloadingPptx === 'commitments' ? '⏳ מייצר מצגת...' : '📜 התחייבויות לפעולה (PPTX)'}
             </button>
           </div>
         </div>
