@@ -349,7 +349,13 @@ export default function AdminPage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'מצגת-אופליין-פורום-100.html';
+      const filenames: Record<string, string> = {
+        images: 'מצגת-תמונות-אופליין-תנובה.html',
+        commitments: 'מצגת-התחייבויות-אופליין-תנובה.html',
+        rapper: 'מצגת-סלוגנים-לראפר-אופליין-תנובה.html',
+        all: 'מצגת-אירוע-משולבת-אופליין-תנובה.html',
+      };
+      a.download = filenames[mode] || 'מצגת-אופליין-תנובה.html';
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -477,36 +483,96 @@ export default function AdminPage() {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
               <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: '#1e1b4b', margin: 0 }}>
-                ⭐ מצגת אופליין מושלמת (נגן HTML עצמאי - מומלץ ביותר להקרנה)
+                ⭐ מצגות אופליין עצמאיות (HTML - ללא תקלות PowerPoint)
               </h3>
               <span style={{ background: '#22c55e', color: '#ffffff', fontSize: '0.75rem', fontWeight: 800, padding: '3px 8px', borderRadius: '12px' }}>
-                100% ללא תקלות
+                100% אופליין
               </span>
             </div>
             <p style={{ fontSize: '0.92rem', color: '#4338ca', margin: 0 }}>
-              קובץ יחיד שנפתח מיידית בדפדפן (Chrome / Edge / Safari) בלחיצה כפולה. עובד באופליין מלא, כולל מסך מלא 16:9, ללא עיוות תמונות וללא שום בעיות פונטים של PowerPoint.
+              נפתח מיידית בדפדפן (Chrome / Edge / Safari) בדאבל-קליק. כולל מסך מלא 16:9, ללא שום עיוות/חיתוך תמונות וללא שום בעיות פונטים.
             </p>
           </div>
 
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => handleDownloadOffline('images')}
+              style={{
+                background: '#0284c7',
+                color: '#ffffff',
+                border: 'none',
+                padding: '9px 16px',
+                borderRadius: '10px',
+                fontWeight: 700,
+                fontSize: '0.95rem',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: '0 2px 8px rgba(2, 132, 199, 0.25)',
+              }}
+            >
+              🖼️ תמונות (HTML)
+            </button>
+
+            <button
+              onClick={() => handleDownloadOffline('commitments')}
+              style={{
+                background: '#7c3aed',
+                color: '#ffffff',
+                border: 'none',
+                padding: '9px 16px',
+                borderRadius: '10px',
+                fontWeight: 700,
+                fontSize: '0.95rem',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: '0 2px 8px rgba(124, 58, 237, 0.25)',
+              }}
+            >
+              🤝 התחייבויות (HTML)
+            </button>
+
+            <button
+              onClick={() => handleDownloadOffline('rapper')}
+              style={{
+                background: '#0052cc',
+                color: '#ffffff',
+                border: 'none',
+                padding: '9px 16px',
+                borderRadius: '10px',
+                fontWeight: 700,
+                fontSize: '0.95rem',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: '0 2px 8px rgba(0, 82, 204, 0.25)',
+              }}
+            >
+              🎤 סלוגנים לראפר (HTML)
+            </button>
+
             <button
               onClick={() => handleDownloadOffline('all')}
               style={{
                 background: 'linear-gradient(135deg, #4f46e5, #4338ca)',
                 color: '#ffffff',
                 border: 'none',
-                padding: '10px 20px',
-                borderRadius: '12px',
+                padding: '9px 18px',
+                borderRadius: '10px',
                 fontWeight: 800,
-                fontSize: '1rem',
+                fontSize: '0.95rem',
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '8px',
+                gap: '6px',
                 boxShadow: '0 4px 12px rgba(79, 70, 229, 0.35)',
               }}
             >
-              🚀 הורד מצגת אופליין מלאה (HTML)
+              🚀 מצגת משולבת (3 ב-1)
             </button>
           </div>
         </div>

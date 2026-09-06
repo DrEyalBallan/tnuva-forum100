@@ -557,20 +557,26 @@ export async function GET(request: NextRequest) {
     window.addEventListener('mousemove', handleMouseMove);
 
     // Initial Start
-    renderSlide();
-    resetTimer();
+    setMode('${mode === 'all' ? 'images' : mode}');
     handleMouseMove();
   </script>
 </body>
 </html>`;
 
-    const filename = 'מצגת-אירוע-אופליין-תנובה.html';
+    const filenames: Record<string, string> = {
+      images: 'tnuva-images-offline.html',
+      commitments: 'tnuva-commitments-offline.html',
+      rapper: 'tnuva-rapper-offline.html',
+      all: 'tnuva-all-offline.html',
+    };
+
+    const filename = filenames[mode] || 'tnuva-offline-slideshow.html';
 
     return new NextResponse(html, {
       status: 200,
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
-        'Content-Disposition': 'attachment; filename="tnuva-offline-slideshow.html"',
+        'Content-Disposition': `attachment; filename="${filename}"`,
         'Cache-Control': 'no-store',
       },
     });
