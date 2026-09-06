@@ -61,6 +61,19 @@ export default function StreamPage() {
     return () => clearTimeout(timer);
   }, [isPlaying, filteredImages, currentIndex, slideDuration]);
 
+  // Escape key to exit playback
+  useEffect(() => {
+    if (!isPlaying) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsPlaying(false);
+        setSelectedGroup('all');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPlaying]);
+
   // Setup Hub Screen (3D Hub)
   if (!isPlaying) {
     return (
@@ -177,14 +190,14 @@ export default function StreamPage() {
     <main className="stream-container">
       {/* Back button to return to hub */}
       <button
-        className="back-button"
+        className="back-to-hub-btn"
         onClick={() => {
           setIsPlaying(false);
           setSelectedGroup('all');
         }}
-        style={{ zIndex: 1000 }}
+        title="חזרה לפאנל ניהול הקרנה (ESC)"
       >
-        ← חזרה לראשי
+        <span>← חזרה לפאנל הקרנה</span>
       </button>
 
       {filteredImages.length === 0 ? (
