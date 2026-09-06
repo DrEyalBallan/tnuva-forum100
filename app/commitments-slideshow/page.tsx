@@ -330,10 +330,17 @@ export default function CommitmentsSlideshowPage() {
                 </div>
                 <div
                   style={{
-                    fontSize: currentItem.commitment && currentItem.commitment.length > 80 ? '2.4rem' : '3.1rem',
+                    fontSize: (() => {
+                      const len = (currentItem.commitment || currentItem.sentence || '').length;
+                      if (len > 220) return '1.75rem';
+                      if (len > 140) return '2.15rem';
+                      if (len > 80) return '2.6rem';
+                      return '3.2rem';
+                    })(),
                     fontWeight: 800,
                     lineHeight: 1.35,
                     color: textColor,
+                    wordBreak: 'break-word',
                   }}
                 >
                   “{currentItem.commitment || currentItem.sentence || 'מובילים מנהיגות ועשייה'}”

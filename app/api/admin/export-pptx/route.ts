@@ -5,12 +5,10 @@ import { getGalleryItems } from '@/lib/storage';
 
 export const dynamic = 'force-dynamic';
 
-function getAutoOrientedUrl(url: string): string {
+function getCleanJpegUrl(url: string): string {
   if (url.includes('cloudinary.com') && url.includes('/upload/')) {
-    // Add a_auto to ensure EXIF rotation is baked in and orientation is upright
-    if (!url.includes('/upload/a_auto')) {
-      return url.replace('/upload/', '/upload/a_auto,c_limit,w_1920,h_1080,q_auto:good,f_jpg/');
-    }
+    // Replace any existing transforms or inject a_auto,c_limit,w_1920,h_1080,q_auto:good,f_jpg
+    return url.replace(/\/upload\/(?:[^\/]+\/)?/, '/upload/a_auto,c_limit,w_1920,h_1080,q_auto:good,f_jpg/');
   }
   return url;
 }
@@ -28,11 +26,10 @@ export async function GET(request: NextRequest) {
 
     const slideWidth = 13.33;
     const slideHeight = 7.5;
-    const slideRatio = slideWidth / slideHeight; // ~1.7773
 
     if (type === 'images') {
       // =========================================================================
-      // 1. IMAGES SLIDESHOW - 100% Full Page Clean, Undistorted, Upright Orientation
+      // 1. IMAGES SLIDESHOW - 100% Full Page Clean, Undistorted, Upright, No Cropping
       // =========================================================================
       pptx.title = 'תמונות הקבוצות';
 
@@ -55,10 +52,10 @@ export async function GET(request: NextRequest) {
           const slide = pptx.addSlide();
           slide.background = { color: '000000' }; // Clean black background for projection
 
-          const targetUrl = getAutoOrientedUrl(item.url);
+          const targetUrl = getCleanJpegUrl(item.url);
 
           try {
-            // Fetch image buffer to inspect true dimensions and avoid pptxgenjs scaling issues
+            // Fetch image buffer to inspect true dimensions and convert to JPEG base64 for PPTX
             const res = await fetch(targetUrl, { cache: 'no-store' });
             if (res.ok) {
               const arrayBuf = await res.arrayBuffer();
@@ -74,34 +71,32 @@ export async function GET(request: NextRequest) {
               }
 
               const imgRatio = dim.width / dim.height;
-              let x = 0;
-              let y = 0;
-              let w = slideWidth;
-              let h = slideHeight;
+              const maxW = slideWidth;
+              const maxH = slideHeight;
 
-              if (imgRatio >= slideRatio) {
-                // Wider than 16:9 -> fit full width, center vertically
-                w = slideWidth;
-                h = slideWidth / imgRatio;
-                x = 0;
-                y = (slideHeight - h) / 2;
-              } else {
-                // Taller / narrower (portrait or 4:3) -> fit full height, center horizontally
-                h = slideHeight;
-                w = slideHeight * imgRatio;
-                y = 0;
-                x = (slideWidth - w) / 2;
+              let w = maxW;
+              let h = maxW / imgRatio;
+
+              if (h > maxH) {
+                h = maxH;
+                w = maxH * imgRatio;
               }
 
+              // Ensure exact placement with zero overshoot (no cut borders)
+              const x = Math.max(0, Number(((maxW - w) / 2).toFixed(3)));
+              const y = Math.max(0, Number(((maxH - h) / 2).toFixed(3)));
+              w = Number(w.toFixed(3));
+              h = Number(h.toFixed(3));
+
               slide.addImage({
-                data: `data:image/${dim.type};base64,${buf.toString('base64')}`,
+                data: `data:image/${dim.type === 'png' ? 'png' : 'jpeg'};base64,${buf.toString('base64')}`,
                 x,
                 y,
                 w,
                 h,
               });
             } else {
-              // Fallback to direct URL if fetch failed
+              // Fallback to direct URL
               slide.addImage({
                 path: targetUrl,
                 x: 0,
@@ -159,7 +154,7 @@ export async function GET(request: NextRequest) {
         // Small Group Number at top
         slide.addText(`קבוצה ${grp}`, {
           x: 1.0,
-          y: 0.9,
+          y: 0.6,
           w: 11.33,
           h: 0.6,
           fontSize: 20,
@@ -169,7 +164,7 @@ export async function GET(request: NextRequest) {
           align: 'center',
         });
 
-        // Slogan text centered in the middle (large, bold, clean)
+        // Slogan text centered in the middle (large, bold, clean with auto-fit)
         if (slogans.length === 0) {
           slide.addText('ממתין לסלוגן...', {
             x: 1.0,
@@ -184,19 +179,33 @@ export async function GET(request: NextRequest) {
           });
         } else {
           const sloganText = slogans.map((s, idx) => slogans.length > 1 ? `#${idx + 1}:  "${s}"` : `"${s}"`).join('\n\n');
-          const fontSize = sloganText.length > 100 ? 32 : (slogans.length > 1 ? 34 : 44);
+          
+          let fontSize = 44;
+          if (sloganText.length > 250) {
+            fontSize = 20;
+          } else if (sloganText.length > 180) {
+            fontSize = 24;
+          } else if (sloganText.length > 120) {
+            fontSize = 28;
+          } else if (sloganText.length > 60 || slogans.length > 1) {
+            fontSize = 34;
+          } else {
+            fontSize = 44;
+          }
 
           slide.addText(sloganText, {
-            x: 1.0,
-            y: 2.0,
-            w: 11.33,
-            h: 4.5,
+            x: 0.8,
+            y: 1.4,
+            w: 11.73,
+            h: 5.5,
             fontSize: fontSize,
             fontFace: 'Arial',
             color: '0F172A',
             bold: true,
             align: 'center',
             valign: 'middle',
+            wrap: true,
+            shrinkText: true,
           });
         }
       });
@@ -233,7 +242,7 @@ export async function GET(request: NextRequest) {
           // Small Group Number at top
           slide.addText(item.group === 0 ? 'כללי' : `קבוצה ${item.group}`, {
             x: 1.0,
-            y: 0.9,
+            y: 0.6,
             w: 11.33,
             h: 0.6,
             fontSize: 20,
@@ -243,21 +252,36 @@ export async function GET(request: NextRequest) {
             align: 'center',
           });
 
-          // Commitment text centered in the middle (large, bold, clean)
-          const text = item.commitment?.trim() || item.sentence?.trim() || 'מובילים מנהיגות ועשייה';
-          const fontSize = text.length > 120 ? 28 : (text.length > 70 ? 34 : 42);
+          // Commitment text centered in the middle (large, bold, clean, auto-scaled to prevent slide overflow)
+          const rawText = item.commitment?.trim() || item.sentence?.trim() || 'מובילים מנהיגות ועשייה';
+          const text = `“${rawText}”`;
 
-          slide.addText(`“${text}”`, {
-            x: 1.0,
-            y: 1.8,
-            w: 11.33,
-            h: 4.8,
+          let fontSize = 42;
+          if (rawText.length > 250) {
+            fontSize = 20;
+          } else if (rawText.length > 180) {
+            fontSize = 24;
+          } else if (rawText.length > 120) {
+            fontSize = 28;
+          } else if (rawText.length > 70) {
+            fontSize = 34;
+          } else {
+            fontSize = 42;
+          }
+
+          slide.addText(text, {
+            x: 0.8,
+            y: 1.4,
+            w: 11.73,
+            h: 5.5,
             fontSize: fontSize,
             fontFace: 'Arial',
             color: '0F172A',
             bold: true,
             align: 'center',
             valign: 'middle',
+            wrap: true,
+            shrinkText: true,
           });
         });
       }
