@@ -47,9 +47,13 @@ export async function uploadBufferToCloudinary(
           return reject(error || new Error('Upload to Cloudinary failed'));
         }
 
+        const finalUrl = (result.secure_url || '').includes('/upload/') && !(result.secure_url || '').includes('/upload/a_auto')
+          ? (result.secure_url || '').replace('/upload/', '/upload/a_auto,f_auto,q_auto/')
+          : result.secure_url;
+
         const item: GalleryItem = {
           id: `${timestamp}-${uniqueId}`,
-          url: result.secure_url,
+          url: finalUrl,
           group: options.group,
           sentence: options.sentence,
           commitment: options.commitment,
@@ -91,9 +95,14 @@ export async function fetchAllCloudinaryGalleryItems(): Promise<GalleryItem[]> {
       const group = parseInt(ctx.group || '1', 10);
       const time = parseInt(ctx.time || '0', 10) || new Date(res.created_at).getTime();
 
+      const rawUrl = res.secure_url || '';
+      const finalUrl = rawUrl.includes('/upload/') && !rawUrl.includes('/upload/a_auto')
+        ? rawUrl.replace('/upload/', '/upload/a_auto,f_auto,q_auto/')
+        : rawUrl;
+
       return {
         id: res.asset_id || res.public_id,
-        url: res.secure_url,
+        url: finalUrl,
         group,
         sentence,
         commitment,
