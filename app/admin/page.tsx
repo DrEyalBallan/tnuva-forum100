@@ -385,9 +385,17 @@ export default function AdminPage() {
             </a>
 
             <a
-              href="/commitments"
+              href="/commitments-slideshow"
               className="logout-button"
               style={{ textDecoration: 'none', background: '#f5f3ff', color: '#7c3aed', borderColor: '#ddd6fe', fontWeight: 700, padding: '8px 16px', borderRadius: '10px' }}
+            >
+              📽️ מצגת התחייבויות
+            </a>
+
+            <a
+              href="/commitments"
+              className="logout-button"
+              style={{ textDecoration: 'none', background: '#f8fafc', color: '#334155', borderColor: '#cbd5e1', fontWeight: 700, padding: '8px 16px', borderRadius: '10px' }}
             >
               📜 לוח התחייבויות
             </a>
