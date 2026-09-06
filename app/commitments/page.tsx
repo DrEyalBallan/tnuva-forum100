@@ -71,7 +71,14 @@ export default function CommitmentsPage() {
         </p>
 
         {/* Navigation buttons */}
-        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '2rem' }}>
+        <div style={{ display: 'flex', gap: '0.85rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '2rem' }}>
+          <a
+            href="/commitments-slideshow"
+            className="save-order-button"
+            style={{ textDecoration: 'none', background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', padding: '9px 22px', borderRadius: '10px', display: 'inline-flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 15px rgba(124, 58, 237, 0.3)' }}
+          >
+            📽️ מצגת שקופיות רצה
+          </a>
           <a
             href="/stream"
             className="save-order-button"
