@@ -109,6 +109,23 @@ export default function StreamPage() {
           {/* Links to Rapper & Commitments Boards */}
           <div style={{ margin: '0.5rem auto 2.5rem', display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
             <a
+              href="/commitments-slideshow"
+              className="save-order-button"
+              style={{
+                textDecoration: 'none',
+                background: 'linear-gradient(135deg, #7c3aed, #6d28d9)',
+                padding: '12px 24px',
+                fontSize: '1.05rem',
+                borderRadius: '12px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 4px 15px rgba(124, 58, 237, 0.4)'
+              }}
+            >
+              📽️ מצגת התחייבויות לפעולה
+            </a>
+            <a
               href="/rapper"
               className="save-order-button"
               style={{
@@ -130,17 +147,17 @@ export default function StreamPage() {
               className="save-order-button"
               style={{
                 textDecoration: 'none',
-                background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                background: '#0052cc',
                 padding: '12px 24px',
                 fontSize: '1.05rem',
                 borderRadius: '12px',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '8px',
-                boxShadow: '0 4px 15px rgba(139, 92, 246, 0.4)'
+                boxShadow: '0 4px 15px rgba(0, 82, 204, 0.4)'
               }}
             >
-              📜 לוח התחייבויות לפעולה
+              📜 לוח התחייבויות
             </a>
           </div>
 
