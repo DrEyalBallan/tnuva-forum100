@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pptxgen from 'pptxgenjs';
+import { imageSize } from 'image-size';
 import { getGalleryItems } from '@/lib/storage';
 
 export const dynamic = 'force-dynamic';
+
+function getAutoOrientedUrl(url: string): string {
+  if (url.includes('cloudinary.com') && url.includes('/upload/')) {
+    // Add a_auto to ensure EXIF rotation is baked in and orientation is upright
+    if (!url.includes('/upload/a_auto')) {
+      return url.replace('/upload/', '/upload/a_auto,c_limit,w_1920,h_1080,q_auto:good,f_jpg/');
+    }
+  }
+  return url;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,9 +26,13 @@ export async function GET(request: NextRequest) {
     pptx.layout = 'LAYOUT_16x9';
     pptx.rtlMode = true;
 
+    const slideWidth = 13.33;
+    const slideHeight = 7.5;
+    const slideRatio = slideWidth / slideHeight; // ~1.7773
+
     if (type === 'images') {
       // =========================================================================
-      // 1. IMAGES SLIDESHOW - 100% Full-page clean, only image, exact aspect ratio
+      // 1. IMAGES SLIDESHOW - 100% Full Page Clean, Undistorted, Upright Orientation
       // =========================================================================
       pptx.title = 'תמונות הקבוצות';
 
@@ -36,20 +51,78 @@ export async function GET(request: NextRequest) {
           align: 'center',
         });
       } else {
-        imageItems.forEach((item) => {
+        for (const item of imageItems) {
           const slide = pptx.addSlide();
-          slide.background = { color: '000000' }; // Pure black background for clean projection
+          slide.background = { color: '000000' }; // Clean black background for projection
 
-          // Full-bleed image preserving exact original aspect ratio (contain)
-          slide.addImage({
-            path: item.url,
-            x: 0,
-            y: 0,
-            w: 13.33,
-            h: 7.5,
-            sizing: { type: 'contain', w: 13.33, h: 7.5 },
-          });
-        });
+          const targetUrl = getAutoOrientedUrl(item.url);
+
+          try {
+            // Fetch image buffer to inspect true dimensions and avoid pptxgenjs scaling issues
+            const res = await fetch(targetUrl, { cache: 'no-store' });
+            if (res.ok) {
+              const arrayBuf = await res.arrayBuffer();
+              const buf = Buffer.from(arrayBuf);
+              let dim = { width: 1920, height: 1080, type: 'jpeg' };
+              try {
+                const detected = imageSize(buf);
+                if (detected.width && detected.height) {
+                  dim = { width: detected.width, height: detected.height, type: detected.type || 'jpeg' };
+                }
+              } catch (e) {
+                console.warn('Could not detect image dimensions, using fallback:', e);
+              }
+
+              const imgRatio = dim.width / dim.height;
+              let x = 0;
+              let y = 0;
+              let w = slideWidth;
+              let h = slideHeight;
+
+              if (imgRatio >= slideRatio) {
+                // Wider than 16:9 -> fit full width, center vertically
+                w = slideWidth;
+                h = slideWidth / imgRatio;
+                x = 0;
+                y = (slideHeight - h) / 2;
+              } else {
+                // Taller / narrower (portrait or 4:3) -> fit full height, center horizontally
+                h = slideHeight;
+                w = slideHeight * imgRatio;
+                y = 0;
+                x = (slideWidth - w) / 2;
+              }
+
+              slide.addImage({
+                data: `data:image/${dim.type};base64,${buf.toString('base64')}`,
+                x,
+                y,
+                w,
+                h,
+              });
+            } else {
+              // Fallback to direct URL if fetch failed
+              slide.addImage({
+                path: targetUrl,
+                x: 0,
+                y: 0,
+                w: slideWidth,
+                h: slideHeight,
+                sizing: { type: 'contain', w: slideWidth, h: slideHeight },
+              });
+            }
+          } catch (err) {
+            console.error('Failed to embed image in slide:', err);
+            slide.addImage({
+              path: targetUrl,
+              x: 0,
+              y: 0,
+              w: slideWidth,
+              h: slideHeight,
+              sizing: { type: 'contain', w: slideWidth, h: slideHeight },
+            });
+          }
+        }
       }
 
     } else if (type === 'rapper') {
@@ -86,7 +159,7 @@ export async function GET(request: NextRequest) {
         // Small Group Number at top
         slide.addText(`קבוצה ${grp}`, {
           x: 1.0,
-          y: 1.0,
+          y: 0.9,
           w: 11.33,
           h: 0.6,
           fontSize: 20,
@@ -115,9 +188,9 @@ export async function GET(request: NextRequest) {
 
           slide.addText(sloganText, {
             x: 1.0,
-            y: 2.2,
+            y: 2.0,
             w: 11.33,
-            h: 4.2,
+            h: 4.5,
             fontSize: fontSize,
             fontFace: 'Arial',
             color: '0F172A',
@@ -160,7 +233,7 @@ export async function GET(request: NextRequest) {
           // Small Group Number at top
           slide.addText(item.group === 0 ? 'כללי' : `קבוצה ${item.group}`, {
             x: 1.0,
-            y: 1.0,
+            y: 0.9,
             w: 11.33,
             h: 0.6,
             fontSize: 20,
@@ -176,9 +249,9 @@ export async function GET(request: NextRequest) {
 
           slide.addText(`“${text}”`, {
             x: 1.0,
-            y: 2.0,
+            y: 1.8,
             w: 11.33,
-            h: 4.5,
+            h: 4.8,
             fontSize: fontSize,
             fontFace: 'Arial',
             color: '0F172A',
