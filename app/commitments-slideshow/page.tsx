@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { EVENT_CONFIG } from '@/lib/eventConfig';
+import InactiveState from '@/components/InactiveState';
 
 interface ImageItem {
   id: string;
@@ -23,6 +24,11 @@ export default function CommitmentsSlideshowPage() {
   const previousDataRef = useRef<ImageItem[]>([]);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // If event is shut off / inactive, render inactive screen with zero links and no running slideshow
+  if (!EVENT_CONFIG.isActive) {
+    return <InactiveState pageTitle="מצגת שקופיות רצה" />;
+  }
+
   // Fetch items live
   const fetchItems = async () => {
     try {
@@ -41,11 +47,10 @@ export default function CommitmentsSlideshowPage() {
   };
 
   useEffect(() => {
+    if (!EVENT_CONFIG.isActive) return;
     fetchItems();
-    if (EVENT_CONFIG.isActive) {
-      const interval = setInterval(fetchItems, 3000);
-      return () => clearInterval(interval);
-    }
+    const interval = setInterval(fetchItems, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   // Filter items that have commitments (or sentences)
@@ -265,11 +270,6 @@ export default function CommitmentsSlideshowPage() {
             <h2 style={{ fontSize: '1.8rem', fontWeight: 700, color: textColor, marginBottom: '0.75rem' }}>
               ממתין להזנת התחייבויות לפעולה...
             </h2>
-            <p style={{ color: isStageTheme ? '#94a3b8' : '#64748b', fontSize: '1.1rem' }}>
-              {EVENT_CONFIG.isActive
-                ? 'ברגע שמשתתפים יעלו התחייבויות, השקופיות ירוצו כאן אוטומטית בלייב.'
-                : 'האירוע אינו פעיל כעת. ניתן להפעילו מחדש בהגדרות הקונפיגורציה.'}
-            </p>
           </div>
         ) : currentItem ? (
           <div

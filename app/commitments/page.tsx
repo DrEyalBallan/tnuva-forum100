@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { EVENT_CONFIG } from '@/lib/eventConfig';
+import InactiveState from '@/components/InactiveState';
 
 interface ImageItem {
   id: string;
@@ -17,6 +18,11 @@ export default function CommitmentsPage() {
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
   const previousDataRef = useRef<ImageItem[]>([]);
+
+  // If event is shut off / inactive, render inactive screen with zero links
+  if (!EVENT_CONFIG.isActive) {
+    return <InactiveState pageTitle="לוח התחייבויות לפעולה" />;
+  }
 
   const fetchItems = async (silent = false) => {
     if (!silent) setIsLoading(true);
@@ -38,14 +44,12 @@ export default function CommitmentsPage() {
   };
 
   useEffect(() => {
+    if (!EVENT_CONFIG.isActive) return;
     fetchItems();
-    // Only poll periodically if event is actively running to save tokens/bandwidth
-    if (EVENT_CONFIG.isActive) {
-      const interval = setInterval(() => {
-        fetchItems(true);
-      }, 4000);
-      return () => clearInterval(interval);
-    }
+    const interval = setInterval(() => {
+      fetchItems(true);
+    }, 4000);
+    return () => clearInterval(interval);
   }, []);
 
   // Filter items that have a commitment (or show all entries)
@@ -75,47 +79,6 @@ export default function CommitmentsPage() {
         <p className="subtitle" style={{ maxWidth: '600px', margin: '0 auto 1.5rem auto' }}>
           {EVENT_CONFIG.eventSubtitle}
         </p>
-
-        {/* Navigation buttons */}
-        {EVENT_CONFIG.navLinks.showNavigation && (
-          <div style={{ display: 'flex', gap: '0.85rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '2rem' }}>
-            <a
-              href="/commitments-slideshow"
-              className="save-order-button"
-              style={{ textDecoration: 'none', background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', padding: '9px 22px', borderRadius: '10px', display: 'inline-flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 15px rgba(124, 58, 237, 0.3)' }}
-            >
-              {EVENT_CONFIG.navLinks.slideshowLabel}
-            </a>
-            <a
-              href="/stream"
-              className="save-order-button"
-              style={{ textDecoration: 'none', background: EVENT_CONFIG.theme.primaryColor || '#0052cc', padding: '9px 20px', borderRadius: '10px' }}
-            >
-              {EVENT_CONFIG.navLinks.streamLabel}
-            </a>
-            <a
-              href="/rapper"
-              className="logout-button"
-              style={{ textDecoration: 'none', padding: '9px 20px', borderRadius: '10px' }}
-            >
-              {EVENT_CONFIG.navLinks.rapperLabel}
-            </a>
-            <a
-              href="/"
-              className="logout-button"
-              style={{ textDecoration: 'none', padding: '9px 20px', borderRadius: '10px' }}
-            >
-              {EVENT_CONFIG.navLinks.uploadPageLabel}
-            </a>
-            <a
-              href="/admin"
-              className="logout-button"
-              style={{ textDecoration: 'none', padding: '9px 20px', borderRadius: '10px' }}
-            >
-              {EVENT_CONFIG.navLinks.adminLabel}
-            </a>
-          </div>
-        )}
 
         {/* Group Filter Bar */}
         <div
@@ -187,15 +150,6 @@ export default function CommitmentsPage() {
           <p style={{ fontSize: '1.25rem', color: '#64748b' }}>
             טרם הוזנו התחייבויות לפעולה {selectedGroup !== 'all' ? `עבור ${EVENT_CONFIG.labels.groupOptionPrefix} ${selectedGroup}` : ''}.
           </p>
-          {EVENT_CONFIG.isActive && (
-            <a
-              href="/"
-              className="btn-primary"
-              style={{ marginTop: '1.5rem', textDecoration: 'none', display: 'inline-flex' }}
-            >
-              {EVENT_CONFIG.labels.uploadButton}
-            </a>
-          )}
         </div>
       ) : (
         <div

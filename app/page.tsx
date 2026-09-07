@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { EVENT_CONFIG } from '@/lib/eventConfig';
+import InactiveState from '@/components/InactiveState';
 
 export default function UserUploadPage() {
   const [isUploading, setIsUploading] = useState(false);
@@ -14,6 +15,11 @@ export default function UserUploadPage() {
   const [uploadedItem, setUploadedItem] = useState<{ url: string; token: string; group: string; sentence: string; commitment: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // If the event is shut off / inactive, show the clean locked screen without any links or live show
+  if (!EVENT_CONFIG.isActive) {
+    return <InactiveState pageTitle="עמוד שיתוף והעלאת תוכן" />;
+  }
 
   const handleDelete = async () => {
     if (!uploadedItem) return;
@@ -55,11 +61,6 @@ export default function UserUploadPage() {
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!EVENT_CONFIG.isActive) {
-      setErrorMessage(EVENT_CONFIG.labels.inactiveNoticeMessage);
-      return;
-    }
-
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -145,57 +146,7 @@ export default function UserUploadPage() {
           {EVENT_CONFIG.eventSubtitle}
         </p>
 
-        {/* Inactive Notice Banner when EVENT_CONFIG.isActive is false */}
-        {!EVENT_CONFIG.isActive ? (
-          <div className="animate-fade-in" style={{ textAlign: 'center', margin: '2rem 0' }} dir="rtl">
-            <div
-              style={{
-                background: '#f8fafc',
-                border: '2px solid #e2e8f0',
-                borderRadius: '16px',
-                padding: '2rem 1.5rem',
-                color: '#475569',
-              }}
-            >
-              <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>🔒</div>
-              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#1e293b', marginBottom: '0.5rem' }}>
-                {EVENT_CONFIG.labels.inactiveNoticeTitle}
-              </h2>
-              <p style={{ color: '#64748b', fontSize: '1.05rem', lineHeight: '1.5' }}>
-                {EVENT_CONFIG.labels.inactiveNoticeMessage}
-              </p>
-            </div>
-
-            {/* Quick Links in Inactive/Archive Mode */}
-            {EVENT_CONFIG.navLinks.showNavigation && (
-              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap', marginTop: '1.5rem' }}>
-                <a
-                  href="/commitments-slideshow"
-                  className="btn-primary"
-                  style={{ textDecoration: 'none', fontSize: '0.95rem', padding: '0.65rem 1.25rem' }}
-                >
-                  {EVENT_CONFIG.navLinks.slideshowLabel}
-                </a>
-                <a
-                  href="/commitments"
-                  className="btn-secondary"
-                  style={{
-                    textDecoration: 'none',
-                    fontSize: '0.95rem',
-                    padding: '0.65rem 1.25rem',
-                    border: '1px solid #cbd5e1',
-                    borderRadius: '50px',
-                    color: '#334155',
-                    background: '#ffffff',
-                    fontWeight: 600,
-                  }}
-                >
-                  {EVENT_CONFIG.navLinks.commitmentsLabel}
-                </a>
-              </div>
-            )}
-          </div>
-        ) : !isSuccess ? (
+        {!isSuccess ? (
           <>
             {/* 1. Group Selector */}
             <div className="input-group mb-2" dir="rtl">
@@ -218,7 +169,7 @@ export default function UserUploadPage() {
               </select>
             </div>
 
-            {/* 2. Slogan Input (סלוגן) */}
+            {/* 2. Slogan Input */}
             <div className="input-group mb-2" dir="rtl">
               <label htmlFor="sentence-input" className="input-label" dir="rtl">
                 {EVENT_CONFIG.labels.sloganTitle}
@@ -236,7 +187,7 @@ export default function UserUploadPage() {
               />
             </div>
 
-            {/* 3. Commitment to Action ("התחייבות לפעולה") */}
+            {/* 3. Commitment to Action */}
             <div className="input-group mb-2" dir="rtl">
               <label htmlFor="commitment-input" className="input-label" dir="rtl">
                 {EVENT_CONFIG.labels.commitmentTitle}

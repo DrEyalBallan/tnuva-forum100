@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { EVENT_CONFIG } from '@/lib/eventConfig';
+import InactiveState from '@/components/InactiveState';
 
 interface ImageItem {
   id: string;
@@ -17,6 +18,11 @@ export default function RapperPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'cards' | 'stage'>('cards');
   const previousDataRef = useRef<ImageItem[]>([]);
+
+  // If event is shut off / inactive, render inactive screen with zero links
+  if (!EVENT_CONFIG.isActive) {
+    return <InactiveState pageTitle="סלוגנים לראפר" />;
+  }
 
   const fetchItems = async (silent = false) => {
     if (!silent) setIsLoading(true);
@@ -38,13 +44,12 @@ export default function RapperPage() {
   };
 
   useEffect(() => {
+    if (!EVENT_CONFIG.isActive) return;
     fetchItems();
-    if (EVENT_CONFIG.isActive) {
-      const interval = setInterval(() => {
-        fetchItems(true);
-      }, 3000);
-      return () => clearInterval(interval);
-    }
+    const interval = setInterval(() => {
+      fetchItems(true);
+    }, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   // Collect ALL slogans per group (1-N), allowing multiple slogans per group without overwriting
@@ -108,40 +113,6 @@ export default function RapperPage() {
         <p className="subtitle" style={{ fontSize: '1.15rem', color: EVENT_CONFIG.theme.accentColor || '#0284c7', fontWeight: 700, marginBottom: '1.5rem' }}>
           {EVENT_CONFIG.eventTitle} | מאגר הסלוגנים של כל הקבוצות
         </p>
-
-        {/* Navigation buttons */}
-        {EVENT_CONFIG.navLinks.showNavigation && (
-          <div style={{ display: 'flex', gap: '0.85rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '2rem' }}>
-            <a
-              href="/commitments-slideshow"
-              className="save-order-button"
-              style={{ textDecoration: 'none', background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', padding: '9px 22px', borderRadius: '10px', display: 'inline-flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 15px rgba(124, 58, 237, 0.3)' }}
-            >
-              {EVENT_CONFIG.navLinks.slideshowLabel}
-            </a>
-            <a
-              href="/commitments"
-              className="save-order-button"
-              style={{ textDecoration: 'none', background: EVENT_CONFIG.theme.primaryColor || '#0052cc', padding: '9px 20px', borderRadius: '10px' }}
-            >
-              {EVENT_CONFIG.navLinks.commitmentsLabel}
-            </a>
-            <a
-              href="/stream"
-              className="logout-button"
-              style={{ textDecoration: 'none', padding: '9px 20px', borderRadius: '10px' }}
-            >
-              {EVENT_CONFIG.navLinks.streamLabel}
-            </a>
-            <a
-              href="/"
-              className="logout-button"
-              style={{ textDecoration: 'none', padding: '9px 20px', borderRadius: '10px' }}
-            >
-              {EVENT_CONFIG.navLinks.uploadPageLabel}
-            </a>
-          </div>
-        )}
 
         {/* Counter & View Mode Switcher */}
         <div

@@ -44,7 +44,7 @@ export default function AdminPage() {
   const fetchImages = async (silent = false) => {
     if (!silent) setIsLoading(true);
     try {
-      const res = await fetch('/api/images', { cache: 'no-store' });
+      const res = await fetch('/api/images?admin=true', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         setImages(data.images || []);

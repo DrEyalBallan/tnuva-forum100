@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { EVENT_CONFIG } from '@/lib/eventConfig';
+import InactiveState from '@/components/InactiveState';
 
 interface ImageItem {
   id: string;
@@ -21,6 +22,11 @@ export default function StreamPage() {
   const [slideDuration, setSlideDuration] = useState(4000); // 4 seconds default
   const previousImagesRef = useRef<ImageItem[]>([]);
 
+  // If event is inactive / shut off, render inactive screen with zero links and no running stream
+  if (!EVENT_CONFIG.isActive) {
+    return <InactiveState pageTitle="מסך הקרנה בלייב" />;
+  }
+
   // Fetch images from API
   const fetchImages = async () => {
     try {
@@ -37,8 +43,9 @@ export default function StreamPage() {
 
   // Poll for new images when playing
   useEffect(() => {
+    if (!EVENT_CONFIG.isActive) return;
     fetchImages();
-    if (isPlaying && EVENT_CONFIG.isActive) {
+    if (isPlaying) {
       const interval = setInterval(fetchImages, 3000);
       return () => clearInterval(interval);
     }
@@ -109,63 +116,6 @@ export default function StreamPage() {
               onChange={(e) => setSlideDuration(parseInt(e.target.value, 10))}
             />
           </div>
-
-          {/* Links to Rapper & Commitments Boards */}
-          {EVENT_CONFIG.navLinks.showNavigation && (
-            <div style={{ margin: '0.5rem auto 2.5rem', display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <a
-                href="/commitments-slideshow"
-                className="save-order-button"
-                style={{
-                  textDecoration: 'none',
-                  background: 'linear-gradient(135deg, #7c3aed, #6d28d9)',
-                  padding: '12px 24px',
-                  fontSize: '1.05rem',
-                  borderRadius: '12px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  boxShadow: '0 4px 15px rgba(124, 58, 237, 0.4)'
-                }}
-              >
-                {EVENT_CONFIG.navLinks.slideshowLabel}
-              </a>
-              <a
-                href="/rapper"
-                className="save-order-button"
-                style={{
-                  textDecoration: 'none',
-                  background: 'linear-gradient(135deg, #0284c7, #2563eb)',
-                  padding: '12px 24px',
-                  fontSize: '1.05rem',
-                  borderRadius: '12px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  boxShadow: '0 4px 15px rgba(37, 99, 235, 0.4)'
-                }}
-              >
-                {EVENT_CONFIG.navLinks.rapperLabel}
-              </a>
-              <a
-                href="/commitments"
-                className="save-order-button"
-                style={{
-                  textDecoration: 'none',
-                  background: EVENT_CONFIG.theme.primaryColor || '#0052cc',
-                  padding: '12px 24px',
-                  fontSize: '1.05rem',
-                  borderRadius: '12px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  boxShadow: '0 4px 15px rgba(0, 82, 204, 0.4)'
-                }}
-              >
-                {EVENT_CONFIG.navLinks.commitmentsLabel}
-              </a>
-            </div>
-          )}
 
           {/* 3D Stream Grid */}
           <div className="stream-grid">
