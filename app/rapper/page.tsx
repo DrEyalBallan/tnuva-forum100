@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { EVENT_CONFIG } from '@/lib/eventConfig';
 
 interface ImageItem {
   id: string;
@@ -38,20 +39,22 @@ export default function RapperPage() {
 
   useEffect(() => {
     fetchItems();
-    const interval = setInterval(() => {
-      fetchItems(true);
-    }, 3000);
-    return () => clearInterval(interval);
+    if (EVENT_CONFIG.isActive) {
+      const interval = setInterval(() => {
+        fetchItems(true);
+      }, 3000);
+      return () => clearInterval(interval);
+    }
   }, []);
 
-  // Collect ALL slogans per group (1-20), allowing multiple slogans per group without overwriting
+  // Collect ALL slogans per group (1-N), allowing multiple slogans per group without overwriting
   const groupSlogans: Record<number, Array<{ id: string; sentence: string; time: number }>> = {};
-  for (let i = 1; i <= 20; i++) {
+  for (let i = 1; i <= EVENT_CONFIG.groupsCount; i++) {
     groupSlogans[i] = [];
   }
 
   items.forEach((item) => {
-    if (item.group >= 1 && item.group <= 20 && item.sentence && item.sentence.trim()) {
+    if (item.group >= 1 && item.group <= EVENT_CONFIG.groupsCount && item.sentence && item.sentence.trim()) {
       const exists = groupSlogans[item.group].some(
         (s) => s.id === item.id || (s.sentence === item.sentence.trim() && Math.abs(s.time - item.time) < 1000)
       );
@@ -66,7 +69,7 @@ export default function RapperPage() {
   });
 
   // Sort each group's slogans by time (newest first)
-  for (let i = 1; i <= 20; i++) {
+  for (let i = 1; i <= EVENT_CONFIG.groupsCount; i++) {
     groupSlogans[i].sort((a, b) => b.time - a.time);
   }
 
@@ -92,17 +95,53 @@ export default function RapperPage() {
     >
       {/* Header */}
       <div className="text-center animate-fade-in mb-2">
-        <img
-          src="/logo-wd.png?v=3"
-          alt="פסגה - פורום 100"
-          style={{ maxWidth: '240px', width: '100%', height: 'auto', margin: '0 auto 1.25rem auto', display: 'block' }}
-        />
+        {EVENT_CONFIG.logoUrl && (
+          <img
+            src={EVENT_CONFIG.logoUrl}
+            alt={EVENT_CONFIG.logoAlt}
+            style={{ maxWidth: '240px', width: '100%', height: 'auto', margin: '0 auto 1.25rem auto', display: 'block' }}
+          />
+        )}
         <h1 className="title" style={{ fontSize: '2.4rem', marginBottom: '0.25rem' }}>
-          🎤 סלוגנים לראפר
+          🎤 {EVENT_CONFIG.navLinks.rapperLabel}
         </h1>
-        <p className="subtitle" style={{ fontSize: '1.15rem', color: '#0284c7', fontWeight: 700, marginBottom: '1.5rem' }}>
-          פורום 100 – מודל מנהיגות | מאגר הסלוגנים של כל הקבוצות
+        <p className="subtitle" style={{ fontSize: '1.15rem', color: EVENT_CONFIG.theme.accentColor || '#0284c7', fontWeight: 700, marginBottom: '1.5rem' }}>
+          {EVENT_CONFIG.eventTitle} | מאגר הסלוגנים של כל הקבוצות
         </p>
+
+        {/* Navigation buttons */}
+        {EVENT_CONFIG.navLinks.showNavigation && (
+          <div style={{ display: 'flex', gap: '0.85rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '2rem' }}>
+            <a
+              href="/commitments-slideshow"
+              className="save-order-button"
+              style={{ textDecoration: 'none', background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', padding: '9px 22px', borderRadius: '10px', display: 'inline-flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 15px rgba(124, 58, 237, 0.3)' }}
+            >
+              {EVENT_CONFIG.navLinks.slideshowLabel}
+            </a>
+            <a
+              href="/commitments"
+              className="save-order-button"
+              style={{ textDecoration: 'none', background: EVENT_CONFIG.theme.primaryColor || '#0052cc', padding: '9px 20px', borderRadius: '10px' }}
+            >
+              {EVENT_CONFIG.navLinks.commitmentsLabel}
+            </a>
+            <a
+              href="/stream"
+              className="logout-button"
+              style={{ textDecoration: 'none', padding: '9px 20px', borderRadius: '10px' }}
+            >
+              {EVENT_CONFIG.navLinks.streamLabel}
+            </a>
+            <a
+              href="/"
+              className="logout-button"
+              style={{ textDecoration: 'none', padding: '9px 20px', borderRadius: '10px' }}
+            >
+              {EVENT_CONFIG.navLinks.uploadPageLabel}
+            </a>
+          </div>
+        )}
 
         {/* Counter & View Mode Switcher */}
         <div
@@ -127,7 +166,7 @@ export default function RapperPage() {
               boxShadow: '0 2px 8px rgba(2, 132, 199, 0.08)',
             }}
           >
-            🔥 {totalSlogansCount} סלוגנים ({groupsWithSlogansCount} מתוך 20 קבוצות)
+            🔥 {totalSlogansCount} סלוגנים ({groupsWithSlogansCount} מתוך {EVENT_CONFIG.groupsCount} קבוצות)
           </div>
 
           <div
@@ -144,7 +183,7 @@ export default function RapperPage() {
             <button
               onClick={() => setViewMode('cards')}
               style={{
-                background: viewMode === 'cards' ? '#0284c7' : 'transparent',
+                background: viewMode === 'cards' ? (EVENT_CONFIG.theme.accentColor || '#0284c7') : 'transparent',
                 color: viewMode === 'cards' ? '#ffffff' : '#475569',
                 border: 'none',
                 padding: '7px 16px',
@@ -159,7 +198,7 @@ export default function RapperPage() {
             <button
               onClick={() => setViewMode('stage')}
               style={{
-                background: viewMode === 'stage' ? '#0284c7' : 'transparent',
+                background: viewMode === 'stage' ? (EVENT_CONFIG.theme.accentColor || '#0284c7') : 'transparent',
                 color: viewMode === 'stage' ? '#ffffff' : '#475569',
                 border: 'none',
                 padding: '7px 16px',
@@ -179,12 +218,12 @@ export default function RapperPage() {
       {isLoading && totalSlogansCount === 0 ? (
         <div className="text-center" style={{ padding: '4rem' }}>
           <div className="loader" style={{ width: '40px', height: '40px', margin: '0 auto 1rem auto' }} />
-          <p style={{ color: '#64748b' }}>טוען סלוגנים בלייב...</p>
+          <p style={{ color: '#64748b' }}>טוען סלוגנים...</p>
         </div>
       ) : viewMode === 'stage' ? (
         /* STAGE TELEPROMPTER VIEW (Light Theme) */
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          {Array.from({ length: 20 }, (_, i) => i + 1).map((grp) => {
+          {Array.from({ length: EVENT_CONFIG.groupsCount }, (_, i) => i + 1).map((grp) => {
             const slogansList = groupSlogans[grp] || [];
             const hasSlogans = slogansList.length > 0;
             return (
@@ -193,7 +232,7 @@ export default function RapperPage() {
                 className="glass-panel"
                 style={{
                   padding: '1.75rem 2rem',
-                  borderRight: hasSlogans ? '6px solid #0284c7' : '6px solid #e2e8f0',
+                  borderRight: hasSlogans ? `6px solid ${EVENT_CONFIG.theme.accentColor || '#0284c7'}` : '6px solid #e2e8f0',
                   background: hasSlogans ? '#ffffff' : '#f8fafc',
                   display: 'flex',
                   alignItems: 'flex-start',
@@ -205,7 +244,7 @@ export default function RapperPage() {
                   style={{
                     minWidth: '130px',
                     textAlign: 'center',
-                    background: hasSlogans ? 'linear-gradient(135deg, #0284c7, #0052cc)' : '#f1f5f9',
+                    background: hasSlogans ? `linear-gradient(135deg, ${EVENT_CONFIG.theme.accentColor || '#0284c7'}, ${EVENT_CONFIG.theme.primaryColor || '#0052cc'})` : '#f1f5f9',
                     color: hasSlogans ? '#ffffff' : '#94a3b8',
                     padding: '12px 18px',
                     borderRadius: '12px',
@@ -215,7 +254,7 @@ export default function RapperPage() {
                     flexShrink: 0,
                   }}
                 >
-                  קבוצה {grp}
+                  {EVENT_CONFIG.labels.groupOptionPrefix} {grp}
                   {slogansList.length > 1 && (
                     <div style={{ fontSize: '0.8rem', fontWeight: 600, opacity: 0.9, marginTop: '4px' }}>
                       ({slogansList.length} סלוגנים)
@@ -233,11 +272,11 @@ export default function RapperPage() {
                           padding: slogansList.length > 1 ? '0.85rem 1.25rem' : '0',
                           borderRadius: '10px',
                           border: slogansList.length > 1 ? '1px solid #e2e8f0' : 'none',
-                          borderRight: slogansList.length > 1 ? '4px solid #0284c7' : 'none',
+                          borderRight: slogansList.length > 1 ? `4px solid ${EVENT_CONFIG.theme.accentColor || '#0284c7'}` : 'none',
                         }}
                       >
                         {slogansList.length > 1 && (
-                          <span style={{ fontSize: '0.85rem', color: '#0284c7', fontWeight: 800, marginLeft: '8px' }}>
+                          <span style={{ fontSize: '0.85rem', color: EVENT_CONFIG.theme.accentColor || '#0284c7', fontWeight: 800, marginLeft: '8px' }}>
                             #{idx + 1}:
                           </span>
                         )}
@@ -248,7 +287,7 @@ export default function RapperPage() {
                     ))
                   ) : (
                     <div style={{ fontSize: '1.2rem', color: '#94a3b8', fontStyle: 'italic', paddingTop: '8px' }}>
-                      ממתין לסלוגן מקבוצה {grp}...
+                      ממתין לסלוגן מ{EVENT_CONFIG.labels.groupOptionPrefix} {grp}...
                     </div>
                   )}
                 </div>
@@ -265,7 +304,7 @@ export default function RapperPage() {
             gap: '1.25rem',
           }}
         >
-          {Array.from({ length: 20 }, (_, i) => i + 1).map((grp) => {
+          {Array.from({ length: EVENT_CONFIG.groupsCount }, (_, i) => i + 1).map((grp) => {
             const slogansList = groupSlogans[grp] || [];
             const hasSlogans = slogansList.length > 0;
             return (
@@ -277,7 +316,7 @@ export default function RapperPage() {
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
-                  borderTop: hasSlogans ? '4px solid #0284c7' : '4px solid #e2e8f0',
+                  borderTop: hasSlogans ? `4px solid ${EVENT_CONFIG.theme.accentColor || '#0284c7'}` : '4px solid #e2e8f0',
                   background: hasSlogans ? '#ffffff' : '#f8fafc',
                   minHeight: '170px',
                   boxShadow: hasSlogans ? '0 4px 15px rgba(15, 23, 42, 0.05)' : 'none',
@@ -295,10 +334,10 @@ export default function RapperPage() {
                       border: hasSlogans ? '1px solid #7dd3fc' : '1px solid #e2e8f0',
                     }}
                   >
-                    קבוצה {grp}
+                    {EVENT_CONFIG.labels.groupOptionPrefix} {grp}
                   </span>
                   {hasSlogans && (
-                    <span style={{ fontSize: '0.8rem', color: '#0284c7', fontWeight: 700 }}>
+                    <span style={{ fontSize: '0.8rem', color: EVENT_CONFIG.theme.accentColor || '#0284c7', fontWeight: 700 }}>
                       {slogansList.length === 1 ? '✓ סלוגן 1' : `✓ ${slogansList.length} סלוגנים`}
                     </span>
                   )}
@@ -319,7 +358,7 @@ export default function RapperPage() {
                         }}
                       >
                         {slogansList.length > 1 && (
-                          <span style={{ fontSize: '0.85rem', color: '#0284c7', fontWeight: 800, marginLeft: '6px' }}>
+                          <span style={{ fontSize: '0.85rem', color: EVENT_CONFIG.theme.accentColor || '#0284c7', fontWeight: 800, marginLeft: '6px' }}>
                             #{idx + 1}
                           </span>
                         )}

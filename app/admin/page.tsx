@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { EVENT_CONFIG } from '@/lib/eventConfig';
 
 interface ImageItem {
   id: string;
@@ -12,7 +13,7 @@ interface ImageItem {
 }
 
 export default function AdminPage() {
-  const password = 'tnuva2025';
+  const password = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'admin123';
   const [images, setImages] = useState<ImageItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [deletingUrls, setDeletingUrls] = useState<Set<string>>(new Set());
@@ -31,9 +32,9 @@ export default function AdminPage() {
     fetchImages();
   }, []);
 
-  // Periodic polling for new images when not in reorder mode
+  // Periodic polling for new images only when event is active and not in reorder mode
   useEffect(() => {
-    if (isReorderMode) return;
+    if (isReorderMode || !EVENT_CONFIG.isActive) return;
     const interval = setInterval(() => {
       fetchImages(true);
     }, 4000);
@@ -147,36 +148,36 @@ export default function AdminPage() {
 
     const confirmMsg = selectedGroupToDelete === 'all'
       ? `האם אתה בטוח שברצונך למחוק לצמיתות את *כל* ${toDelete.length} התמונות? לא ניתן לבטל פעולה זו!`
-      : `האם אתה בטוח שברצונך למחוק לצמיתות את כל ${toDelete.length} התמונות מקבוצה ${selectedGroupToDelete}?`;
+      : `האם אתה בטוח שברצונך למחוק לצמיתות את כל ${toDelete.length} התמונות מ${EVENT_CONFIG.labels.groupOptionPrefix} ${selectedGroupToDelete}?`;
 
     if (!confirm(confirmMsg)) return;
 
     setIsBulkDeleting(true);
-    const urls = toDelete.map((img) => img.url);
+    const targetUrls = toDelete.map((img) => img.url);
 
     try {
       const res = await fetch('/api/admin/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ urls, password }),
+        body: JSON.stringify({ urls: targetUrls, password }),
       });
 
       if (res.ok) {
-        setImages((prev) => prev.filter((img) => !urls.includes(img.url)));
+        setImages((prev) => prev.filter((img) => !targetUrls.includes(img.url)));
         setSelectedUrls(new Set());
       } else {
         const data = await res.json().catch(() => ({}));
-        alert('שגיאה במחיקה קבוצתית: ' + (data.error || 'שגיאה לא ידועה'));
+        alert('שגיאה במחיקת קבוצה: ' + (data.error || 'שגיאה לא ידועה'));
       }
     } catch (err) {
-      console.error('Bulk delete error', err);
-      alert('שגיאה במחיקת תמונות.');
+      console.error('Delete group error', err);
+      alert('שגיאה במחיקת הקבוצה.');
     } finally {
       setIsBulkDeleting(false);
     }
   };
 
-  // Bulk upload
+  // Bulk upload files from local PC
   const handleBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -186,63 +187,57 @@ export default function AdminPage() {
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      try {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('group', '0');
-        formData.append('sentence', '');
-        formData.append('commitment', '');
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('group', '0'); // Group 0 for general bulk uploads
+      formData.append('sentence', '');
+      formData.append('commitment', '');
 
+      try {
         await fetch('/api/upload', {
           method: 'POST',
           body: formData,
         });
-
-        setUploadProgress({ current: i + 1, total: files.length });
       } catch (err) {
-        console.error('Failed to upload file:', file.name, err);
+        console.error('Bulk upload item failed:', err);
       }
+      setUploadProgress({ current: i + 1, total: files.length });
     }
 
     setIsBulkUploading(false);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
     fetchImages();
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    alert('העלאה מרוכזת הסתיימה בהצלחה!');
   };
 
-  // Reordering helpers
+  // Reorder functions
   const moveItem = (index: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= images.length) return;
+
     const newItems = [...images];
-    if (direction === 'up' && index > 0) {
-      const temp = newItems[index - 1];
-      newItems[index - 1] = newItems[index];
-      newItems[index] = temp;
-    } else if (direction === 'down' && index < newItems.length - 1) {
-      const temp = newItems[index + 1];
-      newItems[index + 1] = newItems[index];
-      newItems[index] = temp;
-    }
+    const [moved] = newItems.splice(index, 1);
+    newItems.splice(targetIndex, 0, moved);
     setImages(newItems);
   };
 
   const moveToExtreme = (index: number, position: 'top' | 'bottom') => {
     const newItems = [...images];
-    const [removed] = newItems.splice(index, 1);
+    const [moved] = newItems.splice(index, 1);
     if (position === 'top') {
-      newItems.unshift(removed);
+      newItems.unshift(moved);
     } else {
-      newItems.push(removed);
+      newItems.push(moved);
     }
     setImages(newItems);
   };
 
   const jumpToPosition = (index: number) => {
-    const target = prompt(`העבר תמונה ממיקום ${index + 1} אל (1 - ${images.length}):`);
-    if (!target) return;
-    const pos = parseInt(target, 10);
+    const targetStr = prompt(`הזן מיקום חדש לתמונה זו (1 עד ${images.length}):`, `${index + 1}`);
+    if (!targetStr) return;
+    const pos = parseInt(targetStr, 10);
     if (isNaN(pos) || pos < 1 || pos > images.length) {
-      alert('מספר מיקום לא חוקי.');
+      alert(`אנא הזן מספר תקין בין 1 ל-${images.length}`);
       return;
     }
     const newItems = [...images];
@@ -286,13 +281,14 @@ export default function AdminPage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
+      const cleanCompanyName = (EVENT_CONFIG.companyName || 'event').replace(/[^a-zA-Z0-9א-ת_-]/g, '_');
       const filenames: Record<string, string> = {
-        images: 'מצגת-תמונות-אופליין-תנובה.html',
-        commitments: 'מצגת-התחייבויות-אופליין-תנובה.html',
-        rapper: 'מצגת-סלוגנים-לראפר-אופליין-תנובה.html',
-        all: 'מצגת-אירוע-משולבת-אופליין-תנובה.html',
+        images: `מצגת-תמונות-אופליין-${cleanCompanyName}.html`,
+        commitments: `מצגת-התחייבויות-אופליין-${cleanCompanyName}.html`,
+        rapper: `מצגת-סלוגנים-לראפר-אופליין-${cleanCompanyName}.html`,
+        all: `מצגת-אירוע-משולבת-אופליין-${cleanCompanyName}.html`,
       };
-      a.download = filenames[mode] || 'מצגת-אופליין-תנובה.html';
+      a.download = filenames[mode] || `מצגת-אופליין-${cleanCompanyName}.html`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -302,13 +298,44 @@ export default function AdminPage() {
     }
   };
 
-  // Dashboard view (Direct entrance without password gate)
   return (
     <div className="admin-container">
       <div className="dashboard">
+        {/* Event Status & Configuration Banner */}
+        <div
+          dir="rtl"
+          style={{
+            background: EVENT_CONFIG.isActive ? '#f0fdf4' : '#fef2f2',
+            border: `2px solid ${EVENT_CONFIG.isActive ? '#86efac' : '#fca5a5'}`,
+            borderRadius: '16px',
+            padding: '1.25rem 1.5rem',
+            marginBottom: '1.5rem',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '1rem',
+          }}
+        >
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <span style={{ fontSize: '1.5rem' }}>{EVENT_CONFIG.isActive ? '🟢' : '🔒'}</span>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: EVENT_CONFIG.isActive ? '#15803d' : '#b91c1c', margin: 0 }}>
+                מצב אירוע: {EVENT_CONFIG.isActive ? 'פעיל בלייב (העלאות פתוחות)' : 'ארכיון / מושבת (0 צריכת טוקנים ורוחב פס)'}
+              </h2>
+            </div>
+            <p style={{ margin: 0, fontSize: '0.95rem', color: '#475569' }}>
+              <strong>מותג / חברה:</strong> {EVENT_CONFIG.companyName} | <strong>כותרת אירוע:</strong> {EVENT_CONFIG.eventTitle} | <strong>קבוצות:</strong> {EVENT_CONFIG.groupsCount}
+            </p>
+          </div>
+          <div style={{ fontSize: '0.85rem', color: '#64748b', background: '#ffffff', padding: '6px 14px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+            ✏️ שינוי מיתוג / הפעלה בקובץ: <code>lib/eventConfig.ts</code>
+          </div>
+        </div>
+
         {/* Dashboard Header */}
         <div className="dashboard-header">
-          <h1 dir="rtl">פאנל ניהול אירוע</h1>
+          <h1 dir="rtl">{EVENT_CONFIG.navLinks.adminLabel}</h1>
           <div dir="rtl" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
             <input
               type="file"
@@ -318,14 +345,16 @@ export default function AdminPage() {
               ref={fileInputRef}
               onChange={handleBulkUpload}
             />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="save-order-button"
-              disabled={isBulkUploading}
-              style={{ background: '#7c3aed', padding: '9px 18px', borderRadius: '10px' }}
-            >
-              {isBulkUploading ? `מעלה ${uploadProgress.current}/${uploadProgress.total}...` : '📤 העלאה מרוכזת'}
-            </button>
+            {EVENT_CONFIG.isActive && (
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="save-order-button"
+                disabled={isBulkUploading}
+                style={{ background: '#7c3aed', padding: '9px 18px', borderRadius: '10px' }}
+              >
+                {isBulkUploading ? `מעלה ${uploadProgress.current}/${uploadProgress.total}...` : '📤 העלאה מרוכזת'}
+              </button>
+            )}
 
             {isReorderMode ? (
               <button
@@ -368,6 +397,14 @@ export default function AdminPage() {
               style={{ textDecoration: 'none', background: '#f8fafc', color: '#334155', borderColor: '#cbd5e1', fontWeight: 700, padding: '8px 16px', borderRadius: '10px' }}
             >
               📜 לוח התחייבויות
+            </a>
+
+            <a
+              href="/stream"
+              className="logout-button"
+              style={{ textDecoration: 'none', background: '#f8fafc', color: '#334155', borderColor: '#cbd5e1', fontWeight: 700, padding: '8px 16px', borderRadius: '10px' }}
+            >
+              📺 מסך הקרנה
             </a>
           </div>
         </div>
@@ -496,9 +533,9 @@ export default function AdminPage() {
                 value={selectedGroupToDelete}
                 onChange={(e) => setSelectedGroupToDelete(e.target.value)}
               >
-                {Array.from({ length: 20 }, (_, i) => i + 1).map((grp) => (
+                {Array.from({ length: EVENT_CONFIG.groupsCount }, (_, i) => i + 1).map((grp) => (
                   <option key={grp} value={grp.toString()}>
-                    קבוצה {grp}
+                    {EVENT_CONFIG.labels.groupOptionPrefix} {grp}
                   </option>
                 ))}
                 <option value="all">כל הקבוצות (מחק הכל)</option>
@@ -637,7 +674,7 @@ export default function AdminPage() {
                   {/* Info */}
                   <div className="image-info" dir="rtl">
                     <div className="image-group">
-                      {item.group === 0 ? 'העלאה מרוכזת' : `קבוצה ${item.group}`}
+                      {item.group === 0 ? 'העלאה מרוכזת' : `${EVENT_CONFIG.labels.groupOptionPrefix} ${item.group}`}
                     </div>
 
                     <div className="image-text">

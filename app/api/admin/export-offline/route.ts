@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getGalleryItems } from '@/lib/storage';
+import { EVENT_CONFIG } from '@/lib/eventConfig';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>מצגת פורום 100 – מודל מנהיגות (Offline Player)</title>
+  <title>${EVENT_CONFIG.eventTitle} – ${EVENT_CONFIG.companyName} (Offline Player)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,400;0,600;0,700;0,800;0,900;1,400;1,700&display=swap" rel="stylesheet">
@@ -563,14 +564,15 @@ export async function GET(request: NextRequest) {
 </body>
 </html>`;
 
+    const cleanCompany = (EVENT_CONFIG.companyName || 'event').replace(/[^a-zA-Z0-9א-ת_-]/g, '_');
     const filenames: Record<string, string> = {
-      images: 'tnuva-images-offline.html',
-      commitments: 'tnuva-commitments-offline.html',
-      rapper: 'tnuva-rapper-offline.html',
-      all: 'tnuva-all-offline.html',
+      images: `${cleanCompany}-images-offline.html`,
+      commitments: `${cleanCompany}-commitments-offline.html`,
+      rapper: `${cleanCompany}-rapper-offline.html`,
+      all: `${cleanCompany}-all-offline.html`,
     };
 
-    const filename = filenames[mode] || 'tnuva-offline-slideshow.html';
+    const filename = filenames[mode] || `${cleanCompany}-offline-slideshow.html`;
 
     return new NextResponse(html, {
       status: 200,

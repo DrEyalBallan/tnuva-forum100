@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { EVENT_CONFIG } from '@/lib/eventConfig';
 
 interface ImageItem {
   id: string;
@@ -41,8 +42,10 @@ export default function CommitmentsSlideshowPage() {
 
   useEffect(() => {
     fetchItems();
-    const interval = setInterval(fetchItems, 3000);
-    return () => clearInterval(interval);
+    if (EVENT_CONFIG.isActive) {
+      const interval = setInterval(fetchItems, 3000);
+      return () => clearInterval(interval);
+    }
   }, []);
 
   // Filter items that have commitments (or sentences)
@@ -98,7 +101,13 @@ export default function CommitmentsSlideshowPage() {
   };
 
   const currentItem = filtered.length > 0 ? filtered[currentIndex % filtered.length] : null;
-  const isVideo = currentItem?.url?.match(/\.(mp4|webm|ogg|mov)$/i);
+  const isVideo = currentItem?.url && currentItem.url.match(/\.(mp4|webm|ogg|mov)$/i);
+
+  const isStageTheme = themeMode === 'stage';
+  const bgColor = isStageTheme ? '#0b1329' : '#f8fafc';
+  const textColor = isStageTheme ? '#ffffff' : '#0f172a';
+  const cardBg = isStageTheme ? 'rgba(15, 23, 42, 0.95)' : '#ffffff';
+  const cardBorder = isStageTheme ? 'rgba(56, 189, 248, 0.25)' : '#e2e8f0';
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -108,25 +117,17 @@ export default function CommitmentsSlideshowPage() {
     }
   };
 
-  const isStageTheme = themeMode === 'stage';
-  const bgColor = isStageTheme ? '#0b1329' : '#f8fafc';
-  const textColor = isStageTheme ? '#ffffff' : '#0f172a';
-  const cardBg = isStageTheme ? 'rgba(15, 23, 42, 0.85)' : '#ffffff';
-  const cardBorder = isStageTheme ? 'rgba(56, 189, 248, 0.25)' : '#e2e8f0';
-
   return (
     <main
       onMouseMove={handleMouseMove}
       style={{
+        position: 'relative',
         width: '100vw',
         height: '100vh',
         backgroundColor: bgColor,
-        color: textColor,
         overflow: 'hidden',
-        position: 'relative',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'space-between',
         fontFamily: "'Rubik', system-ui, sans-serif",
         transition: 'background-color 0.4s ease',
       }}
@@ -154,17 +155,19 @@ export default function CommitmentsSlideshowPage() {
       >
         {/* Right side: Logo & Title */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-          <img
-            src="/logo-wd.png?v=3"
-            alt="פסגה - פורום 100"
-            style={{ height: '42px', width: 'auto' }}
-          />
+          {EVENT_CONFIG.logoUrl && (
+            <img
+              src={EVENT_CONFIG.logoUrl}
+              alt={EVENT_CONFIG.logoAlt}
+              style={{ height: '42px', width: 'auto' }}
+            />
+          )}
           <div>
             <h1 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: textColor }}>
-              מצגת התחייבויות לפעולה
+              {EVENT_CONFIG.navLinks.slideshowLabel}
             </h1>
-            <span style={{ fontSize: '0.85rem', color: isStageTheme ? '#38bdf8' : '#0284c7', fontWeight: 600 }}>
-              פורום 100 – מודל מנהיגות
+            <span style={{ fontSize: '0.85rem', color: isStageTheme ? '#38bdf8' : (EVENT_CONFIG.theme.accentColor || '#0284c7'), fontWeight: 600 }}>
+              {EVENT_CONFIG.eventTitle}
             </span>
           </div>
         </div>
@@ -226,7 +229,7 @@ export default function CommitmentsSlideshowPage() {
             href="/commitments"
             style={{
               textDecoration: 'none',
-              background: '#0052cc',
+              background: EVENT_CONFIG.theme.primaryColor || '#0052cc',
               color: '#ffffff',
               padding: '8px 18px',
               borderRadius: '10px',
@@ -263,7 +266,9 @@ export default function CommitmentsSlideshowPage() {
               ממתין להזנת התחייבויות לפעולה...
             </h2>
             <p style={{ color: isStageTheme ? '#94a3b8' : '#64748b', fontSize: '1.1rem' }}>
-              ברגע שמשתתפים יעלו התחייבויות, השקופיות ירוצו כאן אוטומטית בלייב.
+              {EVENT_CONFIG.isActive
+                ? 'ברגע שמשתתפים יעלו התחייבויות, השקופיות ירוצו כאן אוטומטית בלייב.'
+                : 'האירוע אינו פעיל כעת. ניתן להפעילו מחדש בהגדרות הקונפיגורציה.'}
             </p>
           </div>
         ) : currentItem ? (
@@ -294,7 +299,7 @@ export default function CommitmentsSlideshowPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <span
                   style={{
-                    background: 'linear-gradient(135deg, #0284c7, #0052cc)',
+                    background: `linear-gradient(135deg, ${EVENT_CONFIG.theme.accentColor || '#0284c7'}, ${EVENT_CONFIG.theme.primaryColor || '#0052cc'})`,
                     color: '#ffffff',
                     padding: '8px 22px',
                     borderRadius: '12px',
@@ -304,10 +309,10 @@ export default function CommitmentsSlideshowPage() {
                     boxShadow: '0 4px 15px rgba(0, 82, 204, 0.35)',
                   }}
                 >
-                  {currentItem.group === 0 ? 'העלאה כללית' : `קבוצה ${currentItem.group}`}
+                  {currentItem.group === 0 ? 'העלאה כללית' : `${EVENT_CONFIG.labels.groupOptionPrefix} ${currentItem.group}`}
                 </span>
                 <span style={{ fontSize: '1rem', color: isStageTheme ? '#94a3b8' : '#64748b', fontWeight: 600 }}>
-                  פורום 100
+                  {EVENT_CONFIG.companyName}
                 </span>
               </div>
 
@@ -317,7 +322,7 @@ export default function CommitmentsSlideshowPage() {
                   style={{
                     fontSize: '1rem',
                     fontWeight: 800,
-                    color: isStageTheme ? '#38bdf8' : '#0284c7',
+                    color: isStageTheme ? '#38bdf8' : (EVENT_CONFIG.theme.accentColor || '#0284c7'),
                     textTransform: 'uppercase',
                     letterSpacing: '0.5px',
                     marginBottom: '0.75rem',
@@ -326,7 +331,7 @@ export default function CommitmentsSlideshowPage() {
                     gap: '6px',
                   }}
                 >
-                  ✨ ההתחייבות לפעולה שלנו:
+                  ✨ {EVENT_CONFIG.labels.commitmentTitle}:
                 </div>
                 <div
                   style={{
@@ -352,14 +357,14 @@ export default function CommitmentsSlideshowPage() {
                 <div
                   style={{
                     background: isStageTheme ? 'rgba(56, 189, 248, 0.1)' : '#f0f9ff',
-                    borderRight: '4px solid #0284c7',
+                    borderRight: `4px solid ${EVENT_CONFIG.theme.accentColor || '#0284c7'}`,
                     padding: '0.9rem 1.4rem',
                     borderRadius: '0 12px 12px 0',
                     marginTop: '0.5rem',
                   }}
                 >
-                  <span style={{ fontSize: '0.95rem', fontWeight: 700, color: isStageTheme ? '#38bdf8' : '#0284c7', marginLeft: '8px' }}>
-                    🎯 סלוגן הקבוצה:
+                  <span style={{ fontSize: '0.95rem', fontWeight: 700, color: isStageTheme ? '#38bdf8' : (EVENT_CONFIG.theme.accentColor || '#0284c7'), marginLeft: '8px' }}>
+                    🎯 {EVENT_CONFIG.labels.sloganTitle}:
                   </span>
                   <span style={{ fontSize: '1.25rem', fontWeight: 700, color: isStageTheme ? '#f1f5f9' : '#1e293b' }}>
                     "{currentItem.sentence}"
@@ -395,7 +400,7 @@ export default function CommitmentsSlideshowPage() {
                 ) : (
                   <img
                     src={currentItem.url}
-                    alt={`קבוצה ${currentItem.group}`}
+                    alt={`${EVENT_CONFIG.labels.groupOptionPrefix} ${currentItem.group}`}
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                 )}
@@ -452,7 +457,7 @@ export default function CommitmentsSlideshowPage() {
           <button
             onClick={() => setIsPlaying((prev) => !prev)}
             style={{
-              background: isPlaying ? '#0284c7' : '#16a34a',
+              background: isPlaying ? (EVENT_CONFIG.theme.accentColor || '#0284c7') : '#16a34a',
               color: '#ffffff',
               border: 'none',
               padding: '8px 20px',
@@ -516,7 +521,7 @@ export default function CommitmentsSlideshowPage() {
             onChange={(e) => setSlideDuration(parseInt(e.target.value, 10))}
             style={{
               width: '160px',
-              accentColor: '#0284c7',
+              accentColor: EVENT_CONFIG.theme.accentColor || '#0284c7',
               cursor: 'pointer',
             }}
           />
@@ -545,9 +550,9 @@ export default function CommitmentsSlideshowPage() {
             }}
           >
             <option value="all">כל הקבוצות ({items.length})</option>
-            {Array.from({ length: 20 }, (_, i) => i + 1).map((grp) => (
+            {Array.from({ length: EVENT_CONFIG.groupsCount }, (_, i) => i + 1).map((grp) => (
               <option key={grp} value={grp.toString()}>
-                קבוצה {grp}
+                {EVENT_CONFIG.labels.groupOptionPrefix} {grp}
               </option>
             ))}
           </select>

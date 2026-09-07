@@ -1,12 +1,11 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import { EVENT_CONFIG } from '@/lib/eventConfig';
 
 export const metadata: Metadata = {
-  title: 'פורום 100 – מודל מנהיגות | תנובה',
-  description: 'אפליקציית שיתוף תמונות ומשפטים לאירוע פורום 100 – מודל מנהיגות תנובה',
-  icons: {
-    icon: '/tnuva-logo.svg',
-  },
+  title: `${EVENT_CONFIG.eventTitle} | ${EVENT_CONFIG.companyName}`,
+  description: EVENT_CONFIG.eventSubtitle,
+  icons: EVENT_CONFIG.logoUrl ? { icon: EVENT_CONFIG.logoUrl } : undefined,
 };
 
 export const viewport: Viewport = {

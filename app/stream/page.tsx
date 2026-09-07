@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { EVENT_CONFIG } from '@/lib/eventConfig';
 
 interface ImageItem {
   id: string;
@@ -36,10 +37,11 @@ export default function StreamPage() {
 
   // Poll for new images when playing
   useEffect(() => {
-    if (!isPlaying) return;
     fetchImages();
-    const interval = setInterval(fetchImages, 3000);
-    return () => clearInterval(interval);
+    if (isPlaying && EVENT_CONFIG.isActive) {
+      const interval = setInterval(fetchImages, 3000);
+      return () => clearInterval(interval);
+    }
   }, [isPlaying]);
 
   // Filter images whenever allImages or selectedGroup changes
@@ -79,16 +81,18 @@ export default function StreamPage() {
     return (
       <main className="stream-container setup-screen hub-3d">
         <div className="hub-container">
-          <img
-            src="/logo-wd.png?v=3"
-            alt="פסגה - פורום 100"
-            style={{ maxWidth: '240px', width: '100%', height: 'auto', margin: '0 auto 1.5rem auto', display: 'block' }}
-          />
+          {EVENT_CONFIG.logoUrl && (
+            <img
+              src={EVENT_CONFIG.logoUrl}
+              alt={EVENT_CONFIG.logoAlt}
+              style={{ maxWidth: '240px', width: '100%', height: 'auto', margin: '0 auto 1.5rem auto', display: 'block' }}
+            />
+          )}
           <h1 className="hub-title" dir="rtl">
-            פאנל ניהול הקרנה
+            {EVENT_CONFIG.navLinks.streamLabel}
           </h1>
           <p className="hub-subtitle" dir="rtl">
-            בחר זרם להצגת התמונות בלייב
+            {EVENT_CONFIG.eventTitle} | בחרו זרם להצגת התמונות
           </p>
 
           {/* Slide Duration Control */}
@@ -107,59 +111,61 @@ export default function StreamPage() {
           </div>
 
           {/* Links to Rapper & Commitments Boards */}
-          <div style={{ margin: '0.5rem auto 2.5rem', display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <a
-              href="/commitments-slideshow"
-              className="save-order-button"
-              style={{
-                textDecoration: 'none',
-                background: 'linear-gradient(135deg, #7c3aed, #6d28d9)',
-                padding: '12px 24px',
-                fontSize: '1.05rem',
-                borderRadius: '12px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                boxShadow: '0 4px 15px rgba(124, 58, 237, 0.4)'
-              }}
-            >
-              📽️ מצגת התחייבויות לפעולה
-            </a>
-            <a
-              href="/rapper"
-              className="save-order-button"
-              style={{
-                textDecoration: 'none',
-                background: 'linear-gradient(135deg, #0284c7, #2563eb)',
-                padding: '12px 24px',
-                fontSize: '1.05rem',
-                borderRadius: '12px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                boxShadow: '0 4px 15px rgba(37, 99, 235, 0.4)'
-              }}
-            >
-              🎤 עמוד סלוגנים לראפר
-            </a>
-            <a
-              href="/commitments"
-              className="save-order-button"
-              style={{
-                textDecoration: 'none',
-                background: '#0052cc',
-                padding: '12px 24px',
-                fontSize: '1.05rem',
-                borderRadius: '12px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                boxShadow: '0 4px 15px rgba(0, 82, 204, 0.4)'
-              }}
-            >
-              📜 לוח התחייבויות
-            </a>
-          </div>
+          {EVENT_CONFIG.navLinks.showNavigation && (
+            <div style={{ margin: '0.5rem auto 2.5rem', display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <a
+                href="/commitments-slideshow"
+                className="save-order-button"
+                style={{
+                  textDecoration: 'none',
+                  background: 'linear-gradient(135deg, #7c3aed, #6d28d9)',
+                  padding: '12px 24px',
+                  fontSize: '1.05rem',
+                  borderRadius: '12px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: '0 4px 15px rgba(124, 58, 237, 0.4)'
+                }}
+              >
+                {EVENT_CONFIG.navLinks.slideshowLabel}
+              </a>
+              <a
+                href="/rapper"
+                className="save-order-button"
+                style={{
+                  textDecoration: 'none',
+                  background: 'linear-gradient(135deg, #0284c7, #2563eb)',
+                  padding: '12px 24px',
+                  fontSize: '1.05rem',
+                  borderRadius: '12px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: '0 4px 15px rgba(37, 99, 235, 0.4)'
+                }}
+              >
+                {EVENT_CONFIG.navLinks.rapperLabel}
+              </a>
+              <a
+                href="/commitments"
+                className="save-order-button"
+                style={{
+                  textDecoration: 'none',
+                  background: EVENT_CONFIG.theme.primaryColor || '#0052cc',
+                  padding: '12px 24px',
+                  fontSize: '1.05rem',
+                  borderRadius: '12px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: '0 4px 15px rgba(0, 82, 204, 0.4)'
+                }}
+              >
+                {EVENT_CONFIG.navLinks.commitmentsLabel}
+              </a>
+            </div>
+          )}
 
           {/* 3D Stream Grid */}
           <div className="stream-grid">
@@ -173,26 +179,29 @@ export default function StreamPage() {
             >
               <div className="card-content">
                 <h2 dir="rtl">כל הקבוצות</h2>
-                <p dir="rtl">זרם גלובלי</p>
+                <p dir="rtl">זרם גלובלי ({allImages.length} תמונות)</p>
               </div>
             </div>
 
-            {/* Individual Group Cards (1-20) */}
-            {Array.from({ length: 20 }, (_, i) => i + 1).map((grp) => (
-              <div
-                key={grp}
-                className="stream-card group-card"
-                onClick={() => {
-                  setSelectedGroup(grp.toString());
-                  setIsPlaying(true);
-                }}
-              >
-                <div className="card-content">
-                  <h2 dir="rtl">קבוצה {grp}</h2>
-                  <p dir="rtl">זרם מקומי</p>
+            {/* Individual Group Cards (1-N) */}
+            {Array.from({ length: EVENT_CONFIG.groupsCount }, (_, i) => i + 1).map((grp) => {
+              const grpCount = allImages.filter((img) => img.group === grp).length;
+              return (
+                <div
+                  key={grp}
+                  className="stream-card group-card"
+                  onClick={() => {
+                    setSelectedGroup(grp.toString());
+                    setIsPlaying(true);
+                  }}
+                >
+                  <div className="card-content">
+                    <h2 dir="rtl">{EVENT_CONFIG.labels.groupOptionPrefix} {grp}</h2>
+                    <p dir="rtl">{grpCount > 0 ? `${grpCount} תמונות` : 'זרם מקומי'}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </main>
@@ -220,7 +229,7 @@ export default function StreamPage() {
       {filteredImages.length === 0 ? (
         <div className="empty-state">
           <h2 dir="rtl">
-            ממתין לתמונות עבור {selectedGroup === 'all' ? 'כל הקבוצות' : `קבוצה ${selectedGroup}`}...
+            ממתין לתמונות עבור {selectedGroup === 'all' ? 'כל הקבוצות' : `${EVENT_CONFIG.labels.groupOptionPrefix} ${selectedGroup}`}...
           </h2>
           <div className="loader" style={{ width: '48px', height: '48px', marginTop: '1.5rem', margin: '1.5rem auto 0' }} />
         </div>

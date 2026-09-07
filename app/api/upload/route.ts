@@ -3,11 +3,19 @@ import path from 'path';
 import fs from 'fs';
 import { addGalleryItem, GalleryItem, getUploadsDir } from '@/lib/storage';
 import { uploadBufferToCloudinary } from '@/lib/cloudinary';
+import { EVENT_CONFIG } from '@/lib/eventConfig';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
+    if (!EVENT_CONFIG.isActive) {
+      return NextResponse.json(
+        { error: EVENT_CONFIG.labels.inactiveNoticeMessage || 'האירוע אינו פעיל כעת (העלאות חסומות)' },
+        { status: 403 }
+      );
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
     const groupStr = (formData.get('group') as string) || '1';

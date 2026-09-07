@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { EVENT_CONFIG } from '@/lib/eventConfig';
 
 interface ImageItem {
   id: string;
@@ -38,10 +39,13 @@ export default function CommitmentsPage() {
 
   useEffect(() => {
     fetchItems();
-    const interval = setInterval(() => {
-      fetchItems(true);
-    }, 4000);
-    return () => clearInterval(interval);
+    // Only poll periodically if event is actively running to save tokens/bandwidth
+    if (EVENT_CONFIG.isActive) {
+      const interval = setInterval(() => {
+        fetchItems(true);
+      }, 4000);
+      return () => clearInterval(interval);
+    }
   }, []);
 
   // Filter items that have a commitment (or show all entries)
@@ -55,52 +59,63 @@ export default function CommitmentsPage() {
     <main className="container" style={{ minHeight: '100vh', padding: '2.5rem 1.5rem 4rem' }} dir="rtl">
       {/* Header */}
       <div className="text-center animate-fade-in mb-2">
-        <img
-          src="/logo-wd.png?v=3"
-          alt="פסגה - פורום 100"
-          style={{ maxWidth: '240px', width: '100%', height: 'auto', margin: '0 auto 1.25rem auto', display: 'block' }}
-        />
+        {EVENT_CONFIG.logoUrl && (
+          <img
+            src={EVENT_CONFIG.logoUrl}
+            alt={EVENT_CONFIG.logoAlt}
+            style={{ maxWidth: '240px', width: '100%', height: 'auto', margin: '0 auto 1.25rem auto', display: 'block' }}
+          />
+        )}
         <h1 className="title">
-          פורום 100 – מודל מנהיגות
+          {EVENT_CONFIG.eventTitle}
         </h1>
-        <h2 style={{ fontSize: '1.75rem', color: '#0284c7', fontWeight: 800, marginBottom: '0.5rem' }}>
-          📜 לוח התחייבויות לפעולה
+        <h2 style={{ fontSize: '1.75rem', color: EVENT_CONFIG.theme.accentColor || '#0284c7', fontWeight: 800, marginBottom: '0.5rem' }}>
+          📜 {EVENT_CONFIG.navLinks.commitmentsLabel}
         </h2>
         <p className="subtitle" style={{ maxWidth: '600px', margin: '0 auto 1.5rem auto' }}>
-          ההתחייבויות של כלל הקבוצות להובלת מנהיגות, עשייה ומצוינות
+          {EVENT_CONFIG.eventSubtitle}
         </p>
 
         {/* Navigation buttons */}
-        <div style={{ display: 'flex', gap: '0.85rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '2rem' }}>
-          <a
-            href="/commitments-slideshow"
-            className="save-order-button"
-            style={{ textDecoration: 'none', background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', padding: '9px 22px', borderRadius: '10px', display: 'inline-flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 15px rgba(124, 58, 237, 0.3)' }}
-          >
-            📽️ מצגת שקופיות רצה
-          </a>
-          <a
-            href="/stream"
-            className="save-order-button"
-            style={{ textDecoration: 'none', background: '#0052cc', padding: '9px 20px', borderRadius: '10px' }}
-          >
-            📺 מעבר למסך הקרנה
-          </a>
-          <a
-            href="/"
-            className="logout-button"
-            style={{ textDecoration: 'none', padding: '9px 20px', borderRadius: '10px' }}
-          >
-            📱 עמוד משתמש להעלאה
-          </a>
-          <a
-            href="/admin"
-            className="logout-button"
-            style={{ textDecoration: 'none', padding: '9px 20px', borderRadius: '10px' }}
-          >
-            ⚙️ פאנל ניהול
-          </a>
-        </div>
+        {EVENT_CONFIG.navLinks.showNavigation && (
+          <div style={{ display: 'flex', gap: '0.85rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '2rem' }}>
+            <a
+              href="/commitments-slideshow"
+              className="save-order-button"
+              style={{ textDecoration: 'none', background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', padding: '9px 22px', borderRadius: '10px', display: 'inline-flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 15px rgba(124, 58, 237, 0.3)' }}
+            >
+              {EVENT_CONFIG.navLinks.slideshowLabel}
+            </a>
+            <a
+              href="/stream"
+              className="save-order-button"
+              style={{ textDecoration: 'none', background: EVENT_CONFIG.theme.primaryColor || '#0052cc', padding: '9px 20px', borderRadius: '10px' }}
+            >
+              {EVENT_CONFIG.navLinks.streamLabel}
+            </a>
+            <a
+              href="/rapper"
+              className="logout-button"
+              style={{ textDecoration: 'none', padding: '9px 20px', borderRadius: '10px' }}
+            >
+              {EVENT_CONFIG.navLinks.rapperLabel}
+            </a>
+            <a
+              href="/"
+              className="logout-button"
+              style={{ textDecoration: 'none', padding: '9px 20px', borderRadius: '10px' }}
+            >
+              {EVENT_CONFIG.navLinks.uploadPageLabel}
+            </a>
+            <a
+              href="/admin"
+              className="logout-button"
+              style={{ textDecoration: 'none', padding: '9px 20px', borderRadius: '10px' }}
+            >
+              {EVENT_CONFIG.navLinks.adminLabel}
+            </a>
+          </div>
+        )}
 
         {/* Group Filter Bar */}
         <div
@@ -121,7 +136,7 @@ export default function CommitmentsPage() {
           <button
             onClick={() => setSelectedGroup('all')}
             style={{
-              background: selectedGroup === 'all' ? '#0284c7' : '#f1f5f9',
+              background: selectedGroup === 'all' ? (EVENT_CONFIG.theme.accentColor || '#0284c7') : '#f1f5f9',
               color: selectedGroup === 'all' ? '#ffffff' : '#334155',
               border: selectedGroup === 'all' ? 'none' : '1px solid #cbd5e1',
               padding: '8px 16px',
@@ -133,7 +148,7 @@ export default function CommitmentsPage() {
           >
             כל הקבוצות ({items.length})
           </button>
-          {Array.from({ length: 20 }, (_, i) => i + 1).map((grp) => {
+          {Array.from({ length: EVENT_CONFIG.groupsCount }, (_, i) => i + 1).map((grp) => {
             const count = items.filter((i) => i.group === grp).length;
             const isSelected = selectedGroup === grp.toString();
             return (
@@ -141,7 +156,7 @@ export default function CommitmentsPage() {
                 key={grp}
                 onClick={() => setSelectedGroup(grp.toString())}
                 style={{
-                  background: isSelected ? '#0284c7' : '#ffffff',
+                  background: isSelected ? (EVENT_CONFIG.theme.accentColor || '#0284c7') : '#ffffff',
                   color: isSelected ? '#ffffff' : count > 0 ? '#0f172a' : '#94a3b8',
                   border: isSelected ? 'none' : '1px solid #e2e8f0',
                   padding: '8px 14px',
@@ -151,7 +166,7 @@ export default function CommitmentsPage() {
                   transition: 'all 0.2s',
                 }}
               >
-                קבוצה {grp} {count > 0 && `(${count})`}
+                {EVENT_CONFIG.labels.groupOptionPrefix} {grp} {count > 0 && `(${count})`}
               </button>
             );
           })}
@@ -170,15 +185,17 @@ export default function CommitmentsPage() {
           style={{ maxWidth: '600px', margin: '2rem auto', padding: '3rem 2rem' }}
         >
           <p style={{ fontSize: '1.25rem', color: '#64748b' }}>
-            טרם הוזנו התחייבויות לפעולה {selectedGroup !== 'all' ? `עבור קבוצה ${selectedGroup}` : ''}.
+            טרם הוזנו התחייבויות לפעולה {selectedGroup !== 'all' ? `עבור ${EVENT_CONFIG.labels.groupOptionPrefix} ${selectedGroup}` : ''}.
           </p>
-          <a
-            href="/"
-            className="btn-primary"
-            style={{ marginTop: '1.5rem', textDecoration: 'none', display: 'inline-flex' }}
-          >
-            🚀 להזנת התחייבות והעלאת תמונה
-          </a>
+          {EVENT_CONFIG.isActive && (
+            <a
+              href="/"
+              className="btn-primary"
+              style={{ marginTop: '1.5rem', textDecoration: 'none', display: 'inline-flex' }}
+            >
+              {EVENT_CONFIG.labels.uploadButton}
+            </a>
+          )}
         </div>
       ) : (
         <div
@@ -191,7 +208,7 @@ export default function CommitmentsPage() {
           }}
         >
           {filtered.map((item, index) => {
-            const isVideo = item.url.match(/\.(mp4|webm|ogg|mov)$/i);
+            const isVideo = item.url && item.url.match(/\.(mp4|webm|ogg|mov)$/i);
             return (
               <div
                 key={item.id || item.url || index}
@@ -202,7 +219,7 @@ export default function CommitmentsPage() {
                   flexDirection: 'column',
                   justifyContent: 'space-between',
                   position: 'relative',
-                  borderTop: '4px solid #0284c7',
+                  borderTop: `4px solid ${EVENT_CONFIG.theme.accentColor || '#0284c7'}`,
                   background: '#ffffff',
                 }}
               >
@@ -220,7 +237,7 @@ export default function CommitmentsPage() {
                         border: '1px solid #7dd3fc'
                       }}
                     >
-                      {item.group === 0 ? 'כללי' : `קבוצה ${item.group}`}
+                      {item.group === 0 ? 'כללי' : `${EVENT_CONFIG.labels.groupOptionPrefix} ${item.group}`}
                     </span>
                     <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
                       {new Date(item.time).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
@@ -231,20 +248,19 @@ export default function CommitmentsPage() {
                   <div
                     style={{
                       background: '#f8fafc',
-                      borderRight: '4px solid #0284c7',
                       border: '1px solid #e2e8f0',
                       borderRightWidth: '4px',
-                      borderRightColor: '#0284c7',
+                      borderRightColor: EVENT_CONFIG.theme.accentColor || '#0284c7',
                       padding: '1.1rem 1.25rem',
                       borderRadius: '0 12px 12px 0',
                       marginBottom: '1.25rem',
                     }}
                   >
-                    <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#0284c7', marginBottom: '0.35rem' }}>
-                      ✨ התחייבות לפעולה:
+                    <div style={{ fontSize: '0.85rem', fontWeight: 800, color: EVENT_CONFIG.theme.accentColor || '#0284c7', marginBottom: '0.35rem' }}>
+                      ✨ {EVENT_CONFIG.labels.commitmentTitle}:
                     </div>
                     <div style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f172a', lineHeight: 1.45 }}>
-                      {item.commitment || <span style={{ color: '#94a3b8', fontSize: '1rem' }}>ללא פירוט התחייבות</span>}
+                      {item.commitment || <span style={{ color: '#94a3b8', fontSize: '1rem' }}>ללא פירוט</span>}
                     </div>
                   </div>
 
@@ -252,7 +268,7 @@ export default function CommitmentsPage() {
                   {item.sentence && (
                     <div style={{ marginBottom: '1.25rem' }}>
                       <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginBottom: '0.2rem' }}>
-                        🎯 סלוגן הקבוצה:
+                        🎯 {EVENT_CONFIG.labels.sloganTitle}:
                       </div>
                       <div style={{ fontSize: '1.05rem', fontWeight: 600, color: '#334155' }}>
                         "{item.sentence}"

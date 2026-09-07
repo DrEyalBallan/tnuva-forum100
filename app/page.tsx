@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
+import { EVENT_CONFIG } from '@/lib/eventConfig';
 
 export default function UserUploadPage() {
   const [isUploading, setIsUploading] = useState(false);
@@ -54,6 +55,11 @@ export default function UserUploadPage() {
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!EVENT_CONFIG.isActive) {
+      setErrorMessage(EVENT_CONFIG.labels.inactiveNoticeMessage);
+      return;
+    }
+
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -122,24 +128,79 @@ export default function UserUploadPage() {
   return (
     <main className="container upload-page">
       <div className="upload-card animate-fade-in" dir="rtl">
-        <img
-          src="/logo-wd.png?v=3"
-          alt="פסגה - פורום 100"
-          style={{ maxWidth: '250px', width: '100%', height: 'auto', margin: '0 auto 1.5rem auto', display: 'block' }}
-        />
+        {/* Brand Logo (if provided in EVENT_CONFIG) */}
+        {EVENT_CONFIG.logoUrl && (
+          <img
+            src={EVENT_CONFIG.logoUrl}
+            alt={EVENT_CONFIG.logoAlt}
+            style={{ maxWidth: '240px', width: '100%', height: 'auto', margin: '0 auto 1.5rem auto', display: 'block' }}
+          />
+        )}
+
+        {/* Dynamic Titles */}
         <h1 className="title text-center" dir="rtl">
-          פורום 100 – מודל מנהיגות
+          {EVENT_CONFIG.eventTitle}
         </h1>
         <p className="subtitle text-center mb-2" dir="rtl">
-          בחרו את הקבוצה שלכם, הזינו סלוגן והתחייבות לפעולה, והעלו את התמונה שיצרתם
+          {EVENT_CONFIG.eventSubtitle}
         </p>
 
-        {!isSuccess ? (
+        {/* Inactive Notice Banner when EVENT_CONFIG.isActive is false */}
+        {!EVENT_CONFIG.isActive ? (
+          <div className="animate-fade-in" style={{ textAlign: 'center', margin: '2rem 0' }} dir="rtl">
+            <div
+              style={{
+                background: '#f8fafc',
+                border: '2px solid #e2e8f0',
+                borderRadius: '16px',
+                padding: '2rem 1.5rem',
+                color: '#475569',
+              }}
+            >
+              <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>🔒</div>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#1e293b', marginBottom: '0.5rem' }}>
+                {EVENT_CONFIG.labels.inactiveNoticeTitle}
+              </h2>
+              <p style={{ color: '#64748b', fontSize: '1.05rem', lineHeight: '1.5' }}>
+                {EVENT_CONFIG.labels.inactiveNoticeMessage}
+              </p>
+            </div>
+
+            {/* Quick Links in Inactive/Archive Mode */}
+            {EVENT_CONFIG.navLinks.showNavigation && (
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap', marginTop: '1.5rem' }}>
+                <a
+                  href="/commitments-slideshow"
+                  className="btn-primary"
+                  style={{ textDecoration: 'none', fontSize: '0.95rem', padding: '0.65rem 1.25rem' }}
+                >
+                  {EVENT_CONFIG.navLinks.slideshowLabel}
+                </a>
+                <a
+                  href="/commitments"
+                  className="btn-secondary"
+                  style={{
+                    textDecoration: 'none',
+                    fontSize: '0.95rem',
+                    padding: '0.65rem 1.25rem',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '50px',
+                    color: '#334155',
+                    background: '#ffffff',
+                    fontWeight: 600,
+                  }}
+                >
+                  {EVENT_CONFIG.navLinks.commitmentsLabel}
+                </a>
+              </div>
+            )}
+          </div>
+        ) : !isSuccess ? (
           <>
             {/* 1. Group Selector */}
             <div className="input-group mb-2" dir="rtl">
               <label htmlFor="group-select" className="input-label" dir="rtl">
-                1. הקבוצה שלכם (1-20)
+                {EVENT_CONFIG.labels.groupSelectTitle} (1-{EVENT_CONFIG.groupsCount})
               </label>
               <select
                 id="group-select"
@@ -149,9 +210,9 @@ export default function UserUploadPage() {
                 onChange={(e) => setGroup(e.target.value)}
                 disabled={isUploading}
               >
-                {Array.from({ length: 20 }, (_, i) => i + 1).map((num) => (
+                {Array.from({ length: EVENT_CONFIG.groupsCount }, (_, i) => i + 1).map((num) => (
                   <option key={num} value={num.toString()}>
-                    קבוצה {num}
+                    {EVENT_CONFIG.labels.groupOptionPrefix} {num}
                   </option>
                 ))}
               </select>
@@ -160,14 +221,14 @@ export default function UserUploadPage() {
             {/* 2. Slogan Input (סלוגן) */}
             <div className="input-group mb-2" dir="rtl">
               <label htmlFor="sentence-input" className="input-label" dir="rtl">
-                2. סלוגן (עד 80 תווים)
+                {EVENT_CONFIG.labels.sloganTitle}
               </label>
               <input
                 id="sentence-input"
                 type="text"
                 className="modern-input"
-                placeholder="הקלידו כאן סלוגן..."
-                maxLength={80}
+                placeholder={EVENT_CONFIG.labels.sloganPlaceholder}
+                maxLength={EVENT_CONFIG.labels.sloganMaxLength}
                 dir="rtl"
                 value={sentence}
                 onChange={(e) => setSentence(e.target.value)}
@@ -178,13 +239,13 @@ export default function UserUploadPage() {
             {/* 3. Commitment to Action ("התחייבות לפעולה") */}
             <div className="input-group mb-2" dir="rtl">
               <label htmlFor="commitment-input" className="input-label" dir="rtl">
-                3. התחייבות לפעולה
+                {EVENT_CONFIG.labels.commitmentTitle}
               </label>
               <textarea
                 id="commitment-input"
                 className="modern-input"
-                placeholder="הקלידו כאן את ההתחייבות לפעולה..."
-                maxLength={160}
+                placeholder={EVENT_CONFIG.labels.commitmentPlaceholder}
+                maxLength={EVENT_CONFIG.labels.commitmentMaxLength}
                 rows={2}
                 dir="rtl"
                 value={commitment}
@@ -212,7 +273,7 @@ export default function UserUploadPage() {
               {isUploading ? (
                 <div className="upload-status">
                   <span className="loader" style={{ borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#fff' }} />
-                  <p>מעלה... {progress > 0 && `${Math.round(progress)}%`}</p>
+                  <p>{EVENT_CONFIG.labels.uploadingText} {progress > 0 && `${Math.round(progress)}%`}</p>
                   {progress > 0 && (
                     <div
                       style={{
@@ -236,7 +297,7 @@ export default function UserUploadPage() {
                   )}
                 </div>
               ) : (
-                '🚀 4. העלאת תמונה'
+                EVENT_CONFIG.labels.uploadButton
               )}
             </button>
           </>
@@ -254,10 +315,10 @@ export default function UserUploadPage() {
             >
               <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>✅</div>
               <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#15803d', marginBottom: '0.5rem' }}>
-                התוכן התקבל ושודר בהצלחה!
+                {EVENT_CONFIG.labels.successTitle}
               </h2>
               <p style={{ color: '#166534', fontSize: '1.05rem', marginBottom: '1.25rem' }}>
-                הסלוגן, ההתחייבות לפעולה והתמונה שלכם נקלטו במערכת ושודרו לכלל המסכים.
+                {EVENT_CONFIG.labels.successSubtitle}
               </p>
 
               {/* Summary details box */}
@@ -275,7 +336,7 @@ export default function UserUploadPage() {
                   }}
                 >
                   <div style={{ marginBottom: '0.4rem' }}>
-                    <strong style={{ color: '#0052cc' }}>קבוצה:</strong> קבוצה {uploadedItem.group}
+                    <strong style={{ color: '#0052cc' }}>קבוצה:</strong> {EVENT_CONFIG.labels.groupOptionPrefix} {uploadedItem.group}
                   </div>
                   {uploadedItem.sentence && (
                     <div style={{ marginBottom: '0.4rem' }}>
