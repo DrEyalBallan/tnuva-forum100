@@ -7,11 +7,11 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const mode = searchParams.get('mode') || 'all'; // 'all' | 'images' | 'commitments' | 'rapper'
-    const embedImages = searchParams.get('embed') === 'true'; // if true, embed base64
+    const embedImages = searchParams.get('embed') !== 'false'; // Default to TRUE for 100% offline playback
 
     const rawItems = await getGalleryItems();
 
-    // Prepare items with clean data
+    // Prepare items with clean data & embed base64 images so it works completely offline
     const items = await Promise.all(
       rawItems.map(async (item) => {
         let finalUrl = item.url;
