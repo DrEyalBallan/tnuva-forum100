@@ -12,8 +12,7 @@ interface ImageItem {
 }
 
 export default function AdminPage() {
-  const [password, setPassword] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const password = 'tnuva2025';
   const [images, setImages] = useState<ImageItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [deletingUrls, setDeletingUrls] = useState<Set<string>>(new Set());
@@ -27,26 +26,21 @@ export default function AdminPage() {
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Check saved session password
+  // Fetch images on mount
   useEffect(() => {
-    const savedPass = sessionStorage.getItem('admin_pass');
-    if (savedPass) {
-      setPassword(savedPass);
-      setIsAuthenticated(true);
-      fetchImages(savedPass);
-    }
+    fetchImages();
   }, []);
 
-  // Periodic polling for new images when authenticated and not in reorder mode
+  // Periodic polling for new images when not in reorder mode
   useEffect(() => {
-    if (!isAuthenticated || !password || isReorderMode) return;
+    if (isReorderMode) return;
     const interval = setInterval(() => {
-      fetchImages(password, true);
-    }, 5000);
+      fetchImages(true);
+    }, 4000);
     return () => clearInterval(interval);
-  }, [isAuthenticated, password, isReorderMode]);
+  }, [isReorderMode]);
 
-  const fetchImages = async (pass: string, silent = false) => {
+  const fetchImages = async (silent = false) => {
     if (!silent) setIsLoading(true);
     try {
       const res = await fetch('/api/images', { cache: 'no-store' });
@@ -59,22 +53,6 @@ export default function AdminPage() {
     } finally {
       if (!silent) setIsLoading(false);
     }
-  };
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!password) return;
-    setIsAuthenticated(true);
-    sessionStorage.setItem('admin_pass', password);
-    fetchImages(password);
-  };
-
-  const handleLogout = () => {
-    sessionStorage.removeItem('admin_pass');
-    setPassword('');
-    setIsAuthenticated(false);
-    setImages([]);
-    setSelectedUrls(new Set());
   };
 
   // Toggle selection
@@ -110,11 +88,8 @@ export default function AdminPage() {
           next.delete(url);
           return next;
         });
-      } else if (res.status === 401) {
-        alert('אין הרשאה! סיסמה שגויה.');
-        handleLogout();
       } else {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         alert('שגיאה במחיקה: ' + (data.error || 'שגיאה לא ידועה'));
       }
     } catch (err) {
@@ -147,11 +122,8 @@ export default function AdminPage() {
       if (res.ok) {
         setImages((prev) => prev.filter((img) => !targetUrls.includes(img.url)));
         setSelectedUrls(new Set());
-      } else if (res.status === 401) {
-        alert('אין הרשאה! סיסמה שגויה.');
-        handleLogout();
       } else {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         alert('שגיאה במחיקת הבחירה: ' + (data.error || 'שגיאה לא ידועה'));
       }
     } catch (err) {
@@ -192,11 +164,8 @@ export default function AdminPage() {
       if (res.ok) {
         setImages((prev) => prev.filter((img) => !urls.includes(img.url)));
         setSelectedUrls(new Set());
-      } else if (res.status === 401) {
-        alert('אין הרשאה! סיסמה שגויה.');
-        handleLogout();
       } else {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         alert('שגיאה במחיקה קבוצתית: ' + (data.error || 'שגיאה לא ידועה'));
       }
     } catch (err) {
@@ -239,7 +208,7 @@ export default function AdminPage() {
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-    fetchImages(password);
+    fetchImages();
   };
 
   // Reordering helpers
@@ -333,31 +302,7 @@ export default function AdminPage() {
     }
   };
 
-  // Not authenticated view
-  if (!isAuthenticated) {
-    return (
-      <div className="admin-container">
-        <div className="login-container">
-          <h1 dir="rtl">גישת מנהל</h1>
-          <form onSubmit={handleLogin} dir="rtl">
-            <input
-              type="password"
-              placeholder="הזן סיסמת מנהל (ברירת מחדל: tnuva2025)"
-              className="login-input"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoFocus
-            />
-            <button type="submit" className="login-button">
-              התחבר
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
-
-  // Dashboard view
+  // Dashboard view (Direct entrance without password gate)
   return (
     <div className="admin-container">
       <div className="dashboard">
@@ -424,10 +369,6 @@ export default function AdminPage() {
             >
               📜 לוח התחייבויות
             </a>
-
-            <button onClick={handleLogout} className="logout-button" style={{ fontWeight: 700, padding: '8px 16px', borderRadius: '10px' }}>
-              התנתק
-            </button>
           </div>
         </div>
 

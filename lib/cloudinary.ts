@@ -122,7 +122,21 @@ export async function fetchAllCloudinaryGalleryItems(): Promise<GalleryItem[]> {
 export async function deleteFromCloudinary(publicIds: string[]): Promise<void> {
   try {
     if (publicIds.length > 0) {
-      await cloudinary.api.delete_resources(publicIds);
+      // 1. Delete image resources via Admin API
+      await cloudinary.api.delete_resources(publicIds, { resource_type: 'image' }).catch((e) => {
+        console.warn('Image delete_resources notice:', e?.message || e);
+      });
+
+      // 2. Delete video resources via Admin API if any
+      await cloudinary.api.delete_resources(publicIds, { resource_type: 'video' }).catch((e) => {
+        console.warn('Video delete_resources notice:', e?.message || e);
+      });
+
+      // 3. Explicit destroy for each to ensure instant CDN cache invalidation
+      for (const pid of publicIds) {
+        await cloudinary.uploader.destroy(pid, { resource_type: 'image', invalidate: true }).catch(() => {});
+        await cloudinary.uploader.destroy(pid, { resource_type: 'video', invalidate: true }).catch(() => {});
+      }
     }
   } catch (err) {
     console.warn('Error deleting resources from Cloudinary:', err);
