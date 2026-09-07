@@ -136,50 +136,57 @@ export async function getGalleryItems(): Promise<GalleryItem[]> {
   const now = Date.now();
   const deletedSet = getDeletedIdentifiers();
 
-  // Fetch from Cloudinary every 3 seconds or on first init
-  if (!isMemoryStoreInitialized || now - lastCloudinaryFetch > 3000) {
+  // Load from local dataFile first if memory is empty
+  if (!isMemoryStoreInitialized) {
+    const dataFile = getDataFilePath();
+    try {
+      if (fs.existsSync(dataFile)) {
+        const raw = fs.readFileSync(dataFile, 'utf-8');
+        const items: GalleryItem[] = JSON.parse(raw);
+        memoryStore = items.filter((item) => {
+          const keys = extractItemKeys(item);
+          return !keys.some((k) => deletedSet.has(k));
+        });
+      }
+    } catch (err) {
+      console.warn('Filesystem read warning (using memory store fallback):', err);
+    }
+    isMemoryStoreInitialized = true;
+  }
+
+  // Attempt Cloudinary sync only periodically (every 60 seconds or if memory is empty)
+  if (now - lastCloudinaryFetch > 60000 || memoryStore.length === 0) {
     try {
       const cloudItems = await fetchAllCloudinaryGalleryItems();
       if (cloudItems && cloudItems.length > 0) {
         // Filter out any items that were deleted
-        const activeItems = cloudItems.filter((item) => {
+        const activeCloudItems = cloudItems.filter((item) => {
           const keys = extractItemKeys(item);
           return !keys.some((k) => deletedSet.has(k));
         });
-        memoryStore = activeItems;
-        isMemoryStoreInitialized = true;
+
+        // Merge cloud items with memory items
+        const mergedMap = new Map<string, GalleryItem>();
+        activeCloudItems.forEach((item) => mergedMap.set(item.url, item));
+        memoryStore.forEach((item) => {
+          if (!mergedMap.has(item.url)) {
+            mergedMap.set(item.url, item);
+          }
+        });
+
+        memoryStore = Array.from(mergedMap.values()).sort((a, b) => b.time - a.time);
+        await saveGalleryItems(memoryStore);
         lastCloudinaryFetch = now;
-        return memoryStore;
       }
     } catch (err) {
-      console.warn('Cloudinary sync failed, using fallback:', err);
+      console.warn('Cloudinary sync notice (using cached items):', err);
     }
   }
 
-  const dataFile = getDataFilePath();
-  try {
-    if (fs.existsSync(dataFile)) {
-      const raw = fs.readFileSync(dataFile, 'utf-8');
-      const items: GalleryItem[] = JSON.parse(raw);
-      const activeItems = items.filter((item) => {
-        const keys = extractItemKeys(item);
-        return !keys.some((k) => deletedSet.has(k));
-      });
-      if (memoryStore.length === 0) {
-        memoryStore = activeItems;
-      }
-      isMemoryStoreInitialized = true;
-      return memoryStore;
-    }
-  } catch (err) {
-    console.warn('Filesystem read warning (using memory store fallback):', err);
-  }
-
-  if (!isMemoryStoreInitialized) {
-    memoryStore = [];
-    isMemoryStoreInitialized = true;
-  }
-  return memoryStore;
+  return memoryStore.filter((item) => {
+    const keys = extractItemKeys(item);
+    return !keys.some((k) => deletedSet.has(k));
+  });
 }
 
 export async function saveGalleryItems(items: GalleryItem[]): Promise<void> {
